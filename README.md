@@ -35,6 +35,7 @@ Open your browser or run curl to hit the progress API:
 ```bash
 curl http://localhost:8000/api/progress/
 ```
+![Tangkapan Layar Progress](docs/images/6-of-6-passed.png)
 
 **Initial Response:**
 You will see that your completion rate is `0.0%` with failing unit tests because the compliance features are not yet implemented!
