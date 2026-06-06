@@ -72,3 +72,13 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 
 ## 🏆 Tracking Progress
 As you write the correct code, the dynamic test runner will automatically run each test suite on every API request to `/api/progress/`. Watch your score climb from `0.0%` to `100.0%`!
+
+---
+
+## 🎓 UU PDP & ISO 27001 Compliance Map
+
+These Koan challenges are mapped directly to the legal articles of the Indonesian Personal Data Protection Law (UU PDP) and ISO 27001 security standards. You can view the compliance details in your preferred language:
+
+* 🇬🇧 **[English - PDP & ISO 27001 Compliance Map](file:///app/pdp_compliance_map.md)**
+* 🇮🇩 **[Bahasa Indonesia - Peta Kepatuhan UU PDP & ISO 27001](file:///app/pdp_compliance_map_id.md)**
+
