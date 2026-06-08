@@ -60,6 +60,11 @@ def run_koan_tests():
             "id": "k03_data_security",
             "name": "Data Security (Pasal 39 / ISO 27001)",
             "test_class": "koans.k03_data_security.tests.DataSecurityTestCase"
+        },
+        {
+            "id": "k04_rbac_audit",
+            "name": "RBAC & Access Audit Trail (Pasal 40)",
+            "test_class": "koans.k04_rbac_audit.tests.ExplicitRBACAuditTestCase"
         }
     ]
 

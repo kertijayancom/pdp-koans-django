@@ -68,6 +68,13 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
   2. Enforce encryption when saving data to PostgreSQL (`get_prep_value`).
   3. Enforce automatic decryption when retrieving data via the Django ORM (`from_db_value`).
 
+### 🛡️ Koan 4: RBAC & Access Audit Trail (Pasal 40 / ISO 27001 Control A.8.2)
+* **Goal**: Restrict sensitive data access to authorized roles and log every read access.
+* **Files to Edit**: [koans/k04_rbac_audit/views.py](file:///app/koans/k04_rbac_audit/views.py)
+* **Task**:
+  1. Implement a custom DRF permission class (`IsDataProtectionOfficer`) to allow access only to authenticated users with `is_dpo = True`.
+  2. Record a database entry in `AccessAuditLog` whenever a DPO successfully accesses sensitive customer details (logging operator email, target customer ID, and IP address).
+
 ---
 
 ## 🏆 Tracking Progress
