@@ -65,6 +65,16 @@ def run_koan_tests():
             "id": "k04_rbac_audit",
             "name": "RBAC & Access Audit Trail (Pasal 40)",
             "test_class": "koans.k04_rbac_audit.tests.ExplicitRBACAuditTestCase"
+        },
+        {
+            "id": "k05_data_portability",
+            "name": "Data Portability (Pasal 7 & 13)",
+            "test_class": "koans.k05_data_portability.tests.DataPortabilityTestCase"
+        },
+        {
+            "id": "k06_breach_response",
+            "name": "Data Breach Response (Pasal 35)",
+            "test_class": "koans.k06_breach_response.tests.BreachIncidentResponseTestCase"
         }
     ]
 

@@ -75,6 +75,20 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
   1. Implement a custom DRF permission class (`IsDataProtectionOfficer`) to allow access only to authenticated users with `is_dpo = True`.
   2. Record a database entry in `AccessAuditLog` whenever a DPO successfully accesses sensitive customer details (logging operator email, target customer ID, and IP address).
 
+### 🛡️ Koan 5: Data Portability & IDOR Protection (Pasal 7 & 13)
+* **Goal**: Enable users to securely export all their personal data in a machine-readable JSON format.
+* **Files to Edit**: [koans/k05_data_portability/views.py](file:///app/koans/k05_data_portability/views.py)
+* **Task**:
+  1. Prevent IDOR/BOLA (Broken Object Level Authorization) attacks by rejecting requests attempting to export another user's data (return `403 Forbidden`).
+  2. Aggregate all personal data across the system belonging to the authenticated user (UserProfile, ConsentLog, and UserTransaction) into a single structured JSON response.
+
+### 🛡️ Koan 6: Data Breach Response & Incident Containment (Pasal 35)
+* **Goal**: Detect compromised accounts, restrict their access, and generate a BPPA-compliant incident notification report.
+* **Files to Edit**: [koans/k06_breach_response/views.py](file:///app/koans/k06_breach_response/views.py)
+* **Task**:
+  1. Implement an account lockout logic that blocks access (returns `423 Locked`) to sensitive endpoints if the authenticated user has `is_compromised = True`.
+  2. Complete the incident notification report generator to return a standardized JSON report containing all fields mandated by Article 35 of UU PDP, and persist the reported status.
+
 ---
 
 ## 🏆 Tracking Progress

@@ -28,6 +28,8 @@ INSTALLED_APPS = [
     'koans.k02_explicit_consent',
     'koans.k03_data_security',
     'koans.k04_rbac_audit',
+    'koans.k05_data_portability',
+    'koans.k06_breach_response',
 ]
 
 MIDDLEWARE = [
