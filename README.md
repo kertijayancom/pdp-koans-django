@@ -35,7 +35,6 @@ Open your browser or run curl to hit the progress API:
 ```bash
 curl http://localhost:8000/api/progress/
 ```
-![Tangkapan Layar Progress](docs/images/6-of-6-passed.png)
 
 **Initial Response:**
 You will see that your completion rate is `0.0%` with failing unit tests because the compliance features are not yet implemented!
@@ -75,14 +74,15 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
   1. Implement a custom DRF permission class (`IsDataProtectionOfficer`) to allow access only to authenticated users with `is_dpo = True`.
   2. Record a database entry in `AccessAuditLog` whenever a DPO successfully accesses sensitive customer details (logging operator email, target customer ID, and IP address).
 
-### 🛡️ Koan 5: Data Portability & IDOR Protection (Pasal 7 & 13)
+### 🛡️ Koan 5: Data Portability & IDOR Protection (Pasal 7 & 13 UU PDP)
 * **Goal**: Enable users to securely export all their personal data in a machine-readable JSON format.
 * **Files to Edit**: [koans/k05_data_portability/views.py](file:///app/koans/k05_data_portability/views.py)
 * **Task**:
   1. Prevent IDOR/BOLA (Broken Object Level Authorization) attacks by rejecting requests attempting to export another user's data (return `403 Forbidden`).
   2. Aggregate all personal data across the system belonging to the authenticated user (UserProfile, ConsentLog, and UserTransaction) into a single structured JSON response.
 
-### 🛡️ Koan 6: Data Breach Response & Incident Containment (Pasal 35)
+### 🛡️ Koan 6: Data Breach Response & Incident Containment (Pasal 35 UU PDP)
+
 * **Goal**: Detect compromised accounts, restrict their access, and generate a BPPA-compliant incident notification report.
 * **Files to Edit**: [koans/k06_breach_response/views.py](file:///app/koans/k06_breach_response/views.py)
 * **Task**:
