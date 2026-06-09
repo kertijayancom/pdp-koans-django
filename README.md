@@ -100,6 +100,6 @@ As you write the correct code, the dynamic test runner will automatically run ea
 
 These Koan challenges are mapped directly to the legal articles of the Indonesian Personal Data Protection Law (UU PDP) and ISO 27001 security standards. You can view the compliance details in your preferred language:
 
-* 🇬🇧 **[English - PDP & ISO 27001 Compliance Map](file:///app/pdp_compliance_map.md)**
-* 🇮🇩 **[Bahasa Indonesia - Peta Kepatuhan UU PDP & ISO 27001](file:///app/pdp_compliance_map_id.md)**
+* 🇬🇧 **[English - PDP & ISO 27001 Compliance Map](pdp_compliance_map.md)**
+* 🇮🇩 **[Bahasa Indonesia - Peta Kepatuhan UU PDP & ISO 27001](pdp_compliance_map_id.md)**
 
