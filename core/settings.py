@@ -30,7 +30,10 @@ INSTALLED_APPS = [
     'koans.k04_rbac_audit',
     'koans.k05_data_portability',
     'koans.k06_breach_response',
+    'koans.k07_deletion_anonymisation',
+    'koans.k08_consent_withdrawal',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

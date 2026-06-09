@@ -75,6 +75,16 @@ def run_koan_tests():
             "id": "k06_breach_response",
             "name": "Data Breach Response (Pasal 35)",
             "test_class": "koans.k06_breach_response.tests.BreachIncidentResponseTestCase"
+        },
+        {
+            "id": "k07_deletion_anonymisation",
+            "name": "Data Deletion & Anonymisation (Pasal 16 & 43)",
+            "test_class": "koans.k07_deletion_anonymisation.tests.DataDeletionAnonymisationTestCase"
+        },
+        {
+            "id": "k08_consent_withdrawal",
+            "name": "Consent Withdrawal (Pasal 15 & 40)",
+            "test_class": "koans.k08_consent_withdrawal.tests.ConsentWithdrawalTestCase"
         }
     ]
 
