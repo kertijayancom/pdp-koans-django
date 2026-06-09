@@ -16,6 +16,7 @@ class UserProfile(models.Model):
     # Field yang sah & relevan untuk operasional e-commerce
     phone_number = models.CharField(max_length=20)
     shipping_address = models.TextField()
+    marketing_consent = models.BooleanField(default=False)
 
     # -------------------------------------------------------------------------
     # TANTANGAN KOAN 1B: Masking Data Sensitif

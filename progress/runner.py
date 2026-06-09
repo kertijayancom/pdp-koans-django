@@ -85,6 +85,16 @@ def run_koan_tests():
             "id": "k08_consent_withdrawal",
             "name": "Consent Withdrawal (Pasal 15 & 40)",
             "test_class": "koans.k08_consent_withdrawal.tests.ConsentWithdrawalTestCase"
+        },
+        {
+            "id": "k09_purpose_limitation",
+            "name": "Purpose Limitation (Pasal 16 & 27)",
+            "test_class": "koans.k09_purpose_limitation.tests.PurposeLimitationTestCase"
+        },
+        {
+            "id": "k10_data_retention",
+            "name": "Data Retention Policy (Pasal 16 & 43)",
+            "test_class": "koans.k10_data_retention.tests.DataRetentionTestCase"
         }
     ]
 

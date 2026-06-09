@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     'koans.k06_breach_response',
     'koans.k07_deletion_anonymisation',
     'koans.k08_consent_withdrawal',
+    'koans.k09_purpose_limitation',
+    'koans.k10_data_retention',
 ]
 
 

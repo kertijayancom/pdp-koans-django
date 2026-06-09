@@ -89,6 +89,36 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
   1. Implement an account lockout logic that blocks access (returns `423 Locked`) to sensitive endpoints if the authenticated user has `is_compromised = True`.
   2. Complete the incident notification report generator to return a standardized JSON report containing all fields mandated by Article 35 of UU PDP, and persist the reported status.
 
+### 🛡️ Koan 7: Data Deletion & Anonymisation (Pasal 16 & 43 / Right to be Forgotten)
+* **Goal**: Safely process account deletion requests by deleting personal records while anonymizing transactional data.
+* **Files to Edit**: [koans/k07_deletion_anonymisation/views.py](file:///app/koans/k07_deletion_anonymisation/views.py)
+* **Task**:
+  1. Perform a hard-delete on directly identifying user data (User account, UserProfile, ConsentLog).
+  2. Anonymize historical transaction logs (`UserTransaction`) by replacing the user's email with a pseudonymous placeholder (`anonymous_user_xxxx@pdp.local`) to preserve metrics for financial audits without leaking identity.
+
+### 🛡️ Koan 8: Consent Withdrawal (Pasal 15 & 40)
+* **Goal**: Allow users to revoke their consent, record the withdrawal log, and automatically restrict active data processing.
+* **Files to Edit**: [koans/k08_consent_withdrawal/views.py](file:///app/koans/k08_consent_withdrawal/views.py)
+* **Task**:
+  1. Record the consent revocation event in `ConsentLog` (`consent_given = False`) for audit trail compliance.
+  2. Deactivate the user account (`is_active = False`) to prevent active operational data processing, while retaining historical data for legal retention purposes.
+
+### 🛡️ Koan 9: Purpose Limitation (Pasal 16 & 27)
+* **Goal**: Ensure user data is processed only for purposes the user has explicitly agreed to.
+* **Files to Edit**: [koans/k09_purpose_limitation/views.py](file:///app/koans/k09_purpose_limitation/views.py)
+* **Task**:
+  1. Verify the dispatcher has admin/staff permissions.
+  2. Filter list recipients to ensure promotional communications/newsletters are only dispatched to users who have explicitly opted-in to marketing communications (`marketing_consent = True`).
+
+### 🛡️ Koan 10: Data Retention Policy (Pasal 16 & 43)
+* **Goal**: Implement automatic data purging mechanics to prevent storing sensitive records beyond their retention period.
+* **Files to Edit**: [koans/k10_data_retention/management/commands/purge_expired_logs.py](file:///app/koans/k10_data_retention/management/commands/purge_expired_logs.py)
+* **Task**:
+  1. Calculate the threshold time delta based on a retention period parameter (in days).
+  2. Delete all `ActionAuditLog` records created prior to that threshold date.
+  3. Output the exact count of deleted records to stdout in the specified format.
+
+
 ---
 
 ## 🏆 Tracking Progress
