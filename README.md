@@ -65,8 +65,10 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 
 ### 🛡️ Koan 3: Data Security & Encryption (Pasal 39 / ISO 27001 Control A.8.24)
 * **Goal**: Protect sensitive data (NIK) at rest using database-level encryption.
+* **Learning Notes & Hints**: [koans/k03_data_security/README.md](koans/k03_data_security/README.md)
 * **Files to Edit**: [koans/k03_data_security/models.py](koans/k03_data_security/models.py)
 * **Task**:
+
   1. Implement a custom Django model field (`EncryptedCharField`) using Python's `cryptography.fernet.Fernet`.
   2. Enforce encryption when saving data to PostgreSQL (`get_prep_value`).
   3. Enforce automatic decryption when retrieving data via the Django ORM (`from_db_value`).
