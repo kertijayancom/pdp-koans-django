@@ -13,8 +13,11 @@ Unlike traditional terminal-based Koans, this platform runs inside a Docker cont
 * **On-Point Technical Focus**: Pure backend development, no frontend overhead.
 * **Progress API Tracker**: Run test cases dynamically via `GET /api/progress/`.
 * **Interactive Learning Notes**: Every challenge includes localized learning notes containing legal concepts, real-world impacts, implementation hints, and design thinking questions.
+  > [!NOTE]
+  > *Currently, all detailed **Learning Notes (README.md)** inside the Koan folders and the code challenge comment instructions are written in **Bahasa Indonesia**.*
 
 ---
+
 
 ## 🚦 Getting Started
 
@@ -62,13 +65,11 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
   1. Reject registration requests (return `400 Bad Request`) if `consent_given` is not `True`.
   2. If consent is valid, save the audit log (`ConsentLog` model) containing the user email, IP address, and privacy policy version before returning `201 Created`.
 
-
 ### 🛡️ Koan 3: Data Security & Encryption (Pasal 39 / ISO 27001 Control A.8.24)
 * **Goal**: Protect sensitive data (NIK) at rest using database-level encryption.
 * **Learning Notes & Hints**: [koans/k03_data_security/README.md](koans/k03_data_security/README.md)
 * **Files to Edit**: [koans/k03_data_security/models.py](koans/k03_data_security/models.py)
 * **Task**:
-
   1. Implement a custom Django model field (`EncryptedCharField`) using Python's `cryptography.fernet.Fernet`.
   2. Enforce encryption when saving data to PostgreSQL (`get_prep_value`).
   3. Enforce automatic decryption when retrieving data via the Django ORM (`from_db_value`).
@@ -86,7 +87,6 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 * **Learning Notes & Hints**: [koans/k05_data_portability/README.md](koans/k05_data_portability/README.md)
 * **Files to Edit**: [koans/k05_data_portability/views.py](koans/k05_data_portability/views.py)
 * **Task**:
-
   1. Prevent IDOR/BOLA (Broken Object Level Authorization) attacks by rejecting requests attempting to export another user's data (return `403 Forbidden`).
   2. Aggregate all personal data across the system belonging to the authenticated user (UserProfile, ConsentLog, and UserTransaction) into a single structured JSON response.
 
@@ -103,7 +103,6 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 * **Learning Notes & Hints**: [koans/k07_deletion_anonymisation/README.md](koans/k07_deletion_anonymisation/README.md)
 * **Files to Edit**: [koans/k07_deletion_anonymisation/views.py](koans/k07_deletion_anonymisation/views.py)
 * **Task**:
-
   1. Perform a hard-delete on directly identifying user data (User account, UserProfile, ConsentLog).
   2. Anonymize historical transaction logs (`UserTransaction`) by replacing the user's email with a pseudonymous placeholder (`anonymous_user_xxxx@pdp.local`) to preserve metrics for financial audits without leaking identity.
 
@@ -115,15 +114,17 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
   1. Record the consent revocation event in `ConsentLog` (`consent_given = False`) for audit trail compliance.
   2. Deactivate the user account (`is_active = False`) to prevent active operational data processing, while retaining historical data for legal retention purposes.
 
-### 🛡️ Koan 9: Purpose Limitation (Pasal 16 & 27)
+### 🛡️ Koan 9: Purpose Limitation (Pasal 16 & 27 UU PDP)
 * **Goal**: Ensure user data is processed only for purposes the user has explicitly agreed to.
+* **Learning Notes & Hints**: [koans/k09_purpose_limitation/README.md](koans/k09_purpose_limitation/README.md)
 * **Files to Edit**: [koans/k09_purpose_limitation/views.py](koans/k09_purpose_limitation/views.py)
 * **Task**:
   1. Verify the dispatcher has admin/staff permissions.
   2. Filter list recipients to ensure promotional communications/newsletters are only dispatched to users who have explicitly opted-in to marketing communications (`marketing_consent = True`).
 
-### 🛡️ Koan 10: Data Retention Policy (Pasal 16 & 43)
+### 🛡️ Koan 10: Data Retention Policy (Pasal 16 & 43 UU PDP)
 * **Goal**: Implement automatic data purging mechanics to prevent storing sensitive records beyond their retention period.
+* **Learning Notes & Hints**: [koans/k10_data_retention/README.md](koans/k10_data_retention/README.md)
 * **Files to Edit**: [koans/k10_data_retention/management/commands/purge_expired_logs.py](koans/k10_data_retention/management/commands/purge_expired_logs.py)
 * **Task**:
   1. Calculate the threshold time delta based on a retention period parameter (in days).
