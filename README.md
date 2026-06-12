@@ -91,8 +91,8 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
   2. Aggregate all personal data across the system belonging to the authenticated user (UserProfile, ConsentLog, and UserTransaction) into a single structured JSON response.
 
 ### 🛡️ Koan 6: Data Breach Response & Incident Containment (Pasal 35 UU PDP)
-
 * **Goal**: Detect compromised accounts, restrict their access, and generate a BPPA-compliant incident notification report.
+* **Learning Notes & Hints**: [koans/k06_breach_response/README.md](koans/k06_breach_response/README.md)
 * **Files to Edit**: [koans/k06_breach_response/views.py](koans/k06_breach_response/views.py)
 * **Task**:
   1. Implement an account lockout logic that blocks access (returns `423 Locked`) to sensitive endpoints if the authenticated user has `is_compromised = True`.
@@ -100,13 +100,16 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 
 ### 🛡️ Koan 7: Data Deletion & Anonymisation (Pasal 16 & 43 / Right to be Forgotten)
 * **Goal**: Safely process account deletion requests by deleting personal records while anonymizing transactional data.
+* **Learning Notes & Hints**: [koans/k07_deletion_anonymisation/README.md](koans/k07_deletion_anonymisation/README.md)
 * **Files to Edit**: [koans/k07_deletion_anonymisation/views.py](koans/k07_deletion_anonymisation/views.py)
 * **Task**:
+
   1. Perform a hard-delete on directly identifying user data (User account, UserProfile, ConsentLog).
   2. Anonymize historical transaction logs (`UserTransaction`) by replacing the user's email with a pseudonymous placeholder (`anonymous_user_xxxx@pdp.local`) to preserve metrics for financial audits without leaking identity.
 
 ### 🛡️ Koan 8: Consent Withdrawal (Pasal 15 & 40)
 * **Goal**: Allow users to revoke their consent, record the withdrawal log, and automatically restrict active data processing.
+* **Learning Notes & Hints**: [koans/k08_consent_withdrawal/README.md](koans/k08_consent_withdrawal/README.md)
 * **Files to Edit**: [koans/k08_consent_withdrawal/views.py](koans/k08_consent_withdrawal/views.py)
 * **Task**:
   1. Record the consent revocation event in `ConsentLog` (`consent_given = False`) for audit trail compliance.
