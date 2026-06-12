@@ -75,6 +75,7 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 
 ### 🛡️ Koan 4: RBAC & Access Audit Trail (Pasal 40 / ISO 27001 Control A.8.2)
 * **Goal**: Restrict sensitive data access to authorized roles and log every read access.
+* **Learning Notes & Hints**: [koans/k04_rbac_audit/README.md](koans/k04_rbac_audit/README.md)
 * **Files to Edit**: [koans/k04_rbac_audit/views.py](koans/k04_rbac_audit/views.py)
 * **Task**:
   1. Implement a custom DRF permission class (`IsDataProtectionOfficer`) to allow access only to authenticated users with `is_dpo = True`.
@@ -82,8 +83,10 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 
 ### 🛡️ Koan 5: Data Portability & IDOR Protection (Pasal 7 & 13 UU PDP)
 * **Goal**: Enable users to securely export all their personal data in a machine-readable JSON format.
+* **Learning Notes & Hints**: [koans/k05_data_portability/README.md](koans/k05_data_portability/README.md)
 * **Files to Edit**: [koans/k05_data_portability/views.py](koans/k05_data_portability/views.py)
 * **Task**:
+
   1. Prevent IDOR/BOLA (Broken Object Level Authorization) attacks by rejecting requests attempting to export another user's data (return `403 Forbidden`).
   2. Aggregate all personal data across the system belonging to the authenticated user (UserProfile, ConsentLog, and UserTransaction) into a single structured JSON response.
 
