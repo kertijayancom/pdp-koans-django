@@ -19,7 +19,7 @@ class UserProfile(models.Model):
     marketing_consent = models.BooleanField(default=False)
 
     # -------------------------------------------------------------------------
-    # TANTANGAN KOAN 1B: Masking Data Sensitif
+    # TANTANGAN KOAN 1B: Masking Data Sensitif [LEVEL: BASIC]
     # Implementasikan property `masked_phone_number` di bawah ini.
     # Aturan masking: Ubah angka di tengah menjadi asterik (*), sisakan 3 angka 
     # di awal dan 4 angka di akhir. Contoh: '081234567890' -> '081****7890'
@@ -27,4 +27,16 @@ class UserProfile(models.Model):
     @property
     def masked_phone_number(self):
         # TODO: Implementasikan logika masking di sini
+        return self.phone_number
+
+    # -------------------------------------------------------------------------
+    # TANTANGAN KOAN 1C: Masking Dinamis Berbasis Otorisasi [LEVEL: INTERMEDIATE]
+    # Implementasikan metode `get_masked_phone_number` di bawah ini.
+    # Aturan:
+    # - Jika `requesting_user` adalah staff (`is_staff=True`) atau DPO (`is_dpo=True`),
+    #   tampilkan nomor telepon asli tanpa disamarkan (plain text).
+    # - Jika tidak, panggil logika masking di `masked_phone_number` untuk menyamarkannya.
+    # -------------------------------------------------------------------------
+    def get_masked_phone_number(self, requesting_user):
+        # TODO: Implementasikan logika masking berbasis hak akses di sini
         return self.phone_number

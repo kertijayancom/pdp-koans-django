@@ -1,6 +1,6 @@
 # Learning Notes: Koan 01 - Data Minimisation 🛡️
 
-Tantangan ini berfokus pada prinsip **Minimisasi Data (Data Minimisation)** sebagaimana diatur dalam regulasi pelindungan data pribadi.
+Tantangan ini berfokus pada prinsip **Minimisasi Data (Data Minimisation)** sebagaimana diatur dalam regulasi pelindungan data pribadi (UU PDP Pasal 16 & ISO 27001 Control A.8.11).
 
 ---
 
@@ -11,11 +11,10 @@ Tantangan ini berfokus pada prinsip **Minimisasi Data (Data Minimisation)** seba
 - **Relevan (Relevant)**: Memiliki hubungan langsung dengan tujuan.
 - **Terbatas (Limited)**: Hanya mengumpulkan apa yang benar-benar diperlukan (tidak berlebihan).
 
-Dalam konteks e-commerce (kasus kita):
-- Pengiriman barang dan transaksi pembayaran **membutuhkan**: nama, email, alamat pengiriman, dan nomor telepon.
-- Pengiriman barang **tidak membutuhkan**: agama (*religion*), golongan darah (*blood type*), atau afiliasi politik (*political leaning*).
-
-Selain itu, jika data pribadi harus ditampilkan atau dicatat ke dalam log sistem, data sensitif seperti nomor telepon harus disamarkan (**masked**) agar tidak mudah disalahgunakan oleh pihak yang tidak bertanggung jawab.
+Di dalam Koan ini, tantangan dibagi ke dalam **3 tingkat kesulitan (Level)**:
+1. **Level 1: Basic (Masking String Dasar)**: Menyamarkan data nomor telepon di tingkat aplikasi agar aman saat ditampilkan/dicatat di log.
+2. **Level 2: Intermediate (Context-Aware Masking)**: Menyamarkan nomor telepon secara dinamis. Jika diakses oleh pengguna biasa, tampilkan nomor tersamar. Jika diakses oleh Staff/DPO, tampilkan nomor telepon asli.
+3. **Level 3: Advanced (Database Schema Drop)**: Menghapus definisi field dari kode models.py DAN memastikan kolom-kolom tersebut benar-benar di-drop secara fisik dari database PostgreSQL/SQLite melalui perintah migrasi.
 
 ---
 
@@ -30,13 +29,15 @@ Mengabaikan prinsip Minimisasi Data mendatangkan risiko besar bagi organisasi An
 
 ## 3. Apa yang Test-nya Ajarkan (What the Test Teaches)
 
-Unit test pada Koan 01 menguji dua aspek utama untuk menanamkan disiplin ini pada pengembang:
-1. **Uji Redundansi Database (`test_db_fields_minimization`)**:
-   - Memastikan bahwa kolom-kolom berlebih (`religion`, `blood_type`, `political_leaning`) tidak terdeteksi aktif pada model Django `UserProfile`.
-   - Ini mengajarkan kita untuk selalu meninjau ulang skema database dan hanya mempertahankan kolom yang secara operasional memiliki dasar hukum (*lawful basis*) yang sah.
-2. **Uji Penyamaran Data (`test_masked_phone_number_property`)**:
-   - Memverifikasi properti `masked_phone_number` menyamarkan angka di tengah nomor telepon menjadi karakter asterisk (`*`) tetapi tetap menyisakan 3 angka di depan dan 4 angka di belakang (contoh: `081234567890` -> `081****7890`).
-   - Ini melatih pengembang untuk menyamarkan data sensitif sebelum menampilkannya di sisi frontend atau menulisnya ke log audit system (*log masking*).
+Unit test pada Koan 01 menguji aspek-aspek berikut:
+1. **[Advanced] test_01_excessive_fields_removed**:
+   - Memastikan definisi field `religion`, `blood_type`, dan `political_leaning` sudah dihapus dari kode model Django `UserProfile`.
+2. **[Basic] test_02_phone_number_masked_correctly**:
+   - Memverifikasi properti `masked_phone_number` menyamarkan bagian tengah nomor telepon dengan karakter asterisk (`*`) tetapi tetap menyisakan 3 angka di depan dan 4 angka di belakang.
+3. **[Intermediate] test_03_context_aware_masking**:
+   - Memastikan bahwa metode `get_masked_phone_number(requesting_user)` mengenali peran pengakses. Hanya DPO (`is_dpo = True`) dan Staff (`is_staff = True`) yang berwenang melihat data asli untuk keperluan kerja, sisanya diblokir (mendapatkan hasil masking).
+4. **[Advanced] test_04_database_dropped_columns**:
+   - Memverifikasi langsung ke skema fisik database menggunakan raw SQL query untuk memastikan kolom berlebih benar-benar telah di-drop dari tabel PostgreSQL/SQLite.
 
 ---
 
@@ -44,17 +45,23 @@ Unit test pada Koan 01 menguji dua aspek utama untuk menanamkan disiplin ini pad
 
 Untuk menyelesaikan tantangan ini:
 
-- **Bagian A (Skema Database)**: 
-  Cukup hapus atau beri komentar (`#`) pada definisi field database yang berlebihan di berkas `models.py`. Django ORM tidak akan memuat field tersebut jika definisinya dihilangkan dari kelas model.
-- **Bagian B (Masking String)**:
-  - Periksa panjang string nomor telepon sebelum melakukan masking.
-  - Anda bisa menggunakan operasi *slicing* string Python sederhana. Ambil 3 karakter pertama, tambahkan asterisk `*` sebanyak panjang karakter yang dihilangkan di tengah, lalu gabungkan dengan 4 karakter terakhir.
-  - Rumus dinamis jumlah asterisk: `len(phone_number) - 7`.
+- **[Basic] Masking Logic**:
+  Gunakan operasi *slicing* string Python sederhana. Ambil 3 karakter pertama, tambahkan asterisk `*` sebanyak `len(phone_number) - 7`, lalu gabungkan dengan 4 karakter terakhir.
+- **[Intermediate] Context-Aware**:
+  Di dalam metode `get_masked_phone_number(self, requesting_user)`:
+  - Cek apakah `requesting_user.is_staff` bernilai `True`, ATAU `getattr(requesting_user, 'is_dpo', False)` bernilai `True`.
+  - Jika ya, kembalikan `self.phone_number`. Jika tidak, kembalikan `self.masked_phone_number`.
+- **[Advanced] Database Physical Drop**:
+  - Hapus kolom `religion`, `blood_type`, dan `political_leaning` di `models.py`.
+  - Jalankan perintah pembuatan migrasi dan eksekusi migrasi di dalam kontainer Docker Anda:
+    ```bash
+    docker-compose exec web python manage.py makemigrations
+    docker-compose exec web python manage.py migrate
+    ```
 
 ---
 
 ## 5. Studi Kasus Berpikir Kritis (Critical Thinking Case Study)
 
-1. *Bagaimana jika suatu hari departemen pemasaran meminta kita mengumpulkan data "tanggal lahir" pengguna untuk program promo ulang tahun? Apakah itu melanggar prinsip data minimisation? Bagaimana cara kita memprosesnya secara sah?*
+1. *Bagaimana jika suatu hari departemen pemasaran meminta kita mengumpulkan data "tanggal lahir" pengguna untuk program promo ulang tahun? Apakah itu melanggar prinsip data minimisation? Bagaimana cara kita memprosesnya secara sah? (Pikirkan mengenai pemisahan database tabel marketing, dan hanya menyimpan Hari & Bulan tanpa menyimpan Tahun lahir).*
 2. *Selain masking nomor telepon, tipe data sensitif apa lagi di e-commerce yang wajib di-masking sebelum ditampilkan di layar admin (misal: nomor kartu kredit, NIK)? Bagaimana Anda akan merancang sistem masking tersebut agar seragam di seluruh aplikasi?*
-
