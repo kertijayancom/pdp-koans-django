@@ -58,12 +58,14 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
   2. Implement the `masked_phone_number` property to safely mask user phone numbers (e.g., `081234567890` becomes `081****7890`).
 
 ### 🛡️ Koan 2: Explicit Consent Logging (Pasal 20 & 21 UU PDP)
-* **Goal**: Validate and record the user's explicit consent.
+* **Goal**: Validate and record the user's explicit consent, enforcing unbundling of marketing consent.
 * **Learning Notes & Hints**: [koans/k02_explicit_consent/README.md](koans/k02_explicit_consent/README.md)
 * **Files to Edit**: [koans/k02_explicit_consent/views.py](koans/k02_explicit_consent/views.py)
 * **Task**:
-  1. Reject registration requests (return `400 Bad Request`) if `consent_given` is not `True`.
-  2. If consent is valid, save the audit log (`ConsentLog` model) containing the user email, IP address, and privacy policy version before returning `201 Created`.
+  1. Reject registration requests (return `400 Bad Request`) if core service consent (`consent_service`) is not `True`.
+  2. If valid, save the audit log (`ConsentLog` model) containing user email, IP address, and policy version.
+  3. Enforce **Consent Unbundling**: Do not reject registration if marketing consent (`consent_marketing`) is `False`. Create the user profile with `marketing_consent` set dynamically matching the optional input.
+
 
 ### 🛡️ Koan 3: Data Security & Encryption (Pasal 39 / ISO 27001 Control A.8.24)
 * **Goal**: Protect sensitive data (NIK) at rest using database-level encryption.
