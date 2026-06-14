@@ -11,7 +11,8 @@ class RegisterWithConsentView(APIView):
     """
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
-        consent_given = request.data.get('consent_given', False)
+        consent_service = request.data.get('consent_service', False)
+        consent_marketing = request.data.get('consent_marketing', False)
         policy_version = request.data.get('policy_version', 'v1.0')
         
         # Mendapatkan IP Address user secara aman
@@ -23,17 +24,25 @@ class RegisterWithConsentView(APIView):
 
         # -------------------------------------------------------------------------
         # TANTANGAN KOAN 2: Validasi & Logging Explicit Consent
-        # 1. Validasi jika `consent_given` bernilai False atau bukan boolean True.
-        #    Jika tidak setuju, kembalikan HTTP 400 Bad Request dengan detail error.
-        # 2. Jika disetujui, simpan log persetujuan ke database (ConsentLog).
-        # 3. Kembalikan HTTP 201 Created dengan pesan registrasi sukses.
+        #
+        # [LEVEL 1: BASIC] - Validasi Consent Layanan Utama
+        # 1. Cek parameter `consent_service`. Jika False, batalkan registrasi dan
+        #    kembalikan HTTP 400 Bad Request dengan detail error.
+        #
+        # [LEVEL 2: INTERMEDIATE] - Pencatatan Audit Trail
+        # 2. Jika `consent_service` disetujui, simpan log bukti persetujuan ke database
+        #    (buat instance `ConsentLog` baru dengan data email, ip_address, dll).
+        #
+        # [LEVEL 3: ADVANCED] - Anti-Bundling Consent (UU PDP Pasal 20 / RPP Pasal 55)
+        # 3. Registrasi tidak boleh dibatalkan meskipun user menolak persetujuan marketing
+        #    (`consent_marketing` bernilai False).
+        # 4. Buat profile `UserProfile` (impor dari k01) dengan flag `marketing_consent` 
+        #    yang disesuaikan dengan input `consent_marketing` (True atau False).
+        # 5. Kembalikan response sukses registrasi dengan HTTP 201 Created.
         # -------------------------------------------------------------------------
         
-        # TODO: Tulis logika validasi dan penyimpanan log persetujuan di sini.
-        # Catatan: Pastikan `ConsentLog` dibuat dengan field user_email, consent_given, 
-        # ip_address, dan policy_version.
+        # TODO: Tulis logika validasi, penyimpanan log persetujuan, dan profile creation di sini.
 
-        
         # Default placeholder (saat ini meloloskan semua request tanpa log - TIDAK PATUH!)
         return Response(
             {"message": "Registration received (but consent not logged!)"},
