@@ -37,16 +37,27 @@ class CustomerSensitiveDataView(APIView):
             ip = request.META.get('REMOTE_ADDR', '127.0.0.1')
 
         # -------------------------------------------------------------------------
-        # TANTANGAN KOAN 4B: Access Audit Trail Logging (ISO 27001 Control A.8.2)
-        # 1. Simpan catatan akses ke model `AccessAuditLog`.
+        # TANTANGAN KOAN 4: Access Audit Trail & Cryptographic Chain
+        #
+        # [LEVEL 1: BASIC] - Custom Permission Class
+        # 1. Pastikan endpoint dilindungi dengan kelas izin `IsDataProtectionOfficer` di atas.
+        #
+        # [LEVEL 2: INTERMEDIATE] - Perekaman Log Akses Dasar
+        # 2. Simpan catatan akses ke model `AccessAuditLog` dengan field:
         #    - `operator_email`: email dari user yang sedang login (`request.user.email`).
         #    - `action`: "VIEW_SENSITIVE_DATA"
-        #    - `accessed_user_id`: ID pelanggan yang datanya sedang diakses (diambil dari parameter `id`).
+        #    - `accessed_user_id`: ID pelanggan yang datanya diakses (`id`).
         #    - `ip_address`: IP Address pemohon (`ip`).
-        # 2. Kembalikan data sensitif simulasi dengan HTTP 200 OK.
+        #
+        # [LEVEL 3: ADVANCED] - Cryptographic Hash Chain (Tamper-Resistant Audit Log)
+        # 3. Sebelum menyimpan log baru, cari record log terakhir yang tersimpan di database.
+        #    - Jika log terakhir ada, set `previous_hash` log baru dengan `hash_signature` dari log terakhir tersebut.
+        #    - Jika database log masih kosong, set `previous_hash = ""` (string kosong).
+        # 4. Hitung nilai signature untuk log baru ini menggunakan method `.calculate_hash()`.
+        # 5. Simpan nilai hasil kalkulasi tersebut ke dalam field `hash_signature`.
         # -------------------------------------------------------------------------
         
-        # TODO: Simpan log audit akses ke database di sini sebelum mengembalikan respons.
+        # TODO: Simpan log audit akses dengan hash signature di sini sebelum mengembalikan respons.
 
         # Data sensitif tiruan yang dikembalikan
         mock_data = {
