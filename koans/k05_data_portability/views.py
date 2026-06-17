@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 # Impor model terkait dari koan sebelumnya untuk agregasi data
 from koans.k01_data_minimization.models import UserProfile
 from koans.k02_explicit_consent.models import ConsentLog
-from koans.k05_data_portability.models import UserTransaction
+from koans.k05_data_portability.models import UserTransaction, DataExportJob
 
 class DataPortabilityExportView(APIView):
     """
@@ -21,7 +21,7 @@ class DataPortabilityExportView(APIView):
         user_email = request.user.email
 
         # -------------------------------------------------------------------------
-        # TANTANGAN KOAN 5A: Pencegahan IDOR / BOLA (Broken Object Level Authorization)
+        # TANTANGAN KOAN 5A: Pencegahan IDOR / BOLA (Level: Basic)
         # 1. Pastikan sistem mengabaikan email eksternal jika dikirim lewat query parameter
         #    (misalnya: GET /api/users/export-data/?email=korban@example.com).
         #    Sistem harus SELALU mengunci data hanya untuk `request.user.email`.
@@ -33,7 +33,24 @@ class DataPortabilityExportView(APIView):
         # TODO: Implementasikan validasi pencegahan IDOR di sini.
 
         # -------------------------------------------------------------------------
-        # TANTANGAN KOAN 5B: Agregasi Data Lintas Tabel & Standardisasi JSON
+        # TANTANGAN KOAN 5C/5D: Polling Asynchronous Export (Level: Advanced)
+        # 1. Periksa apakah parameter `job_id` ada dalam query string. Jika ya:
+        #    - Cari DataExportJob yang sesuai dengan `id=job_id` dan milik pengguna login.
+        #    - Jika ditemukan, ubah statusnya menjadi 'COMPLETED', isi `download_url` 
+        #      dengan link mock (misal: http://localhost:8000/media/exports/export_<job_id>.json),
+        #      kemudian simpan dan kembalikan dengan status HTTP 200 OK.
+        #    - Jika tidak ditemukan, kembalikan HTTP 404 Not Found.
+        # 2. Periksa apakah parameter `async` bernilai 'true'. Jika ya:
+        #    - Buat data `DataExportJob` baru dengan status 'PENDING'.
+        #    - Kembalikan respons berupa job_id dan status dengan HTTP 202 Accepted.
+        # -------------------------------------------------------------------------
+        job_id = request.GET.get('job_id')
+        is_async = request.GET.get('async')
+
+        # TODO: Implementasikan penanganan ekspor asinkronous (trigger & polling) di sini.
+
+        # -------------------------------------------------------------------------
+        # TANTANGAN KOAN 5B: Agregasi Data Lintas Tabel & Standardisasi JSON (Level: Intermediate)
         # Kumpulkan semua data terkait email pengguna dari tabel-tabel berikut:
         # 1. UserProfile (Koan 1) -> Ambil data profile (username, phone_number, shipping_address).
         # 2. ConsentLog (Koan 2) -> Ambil riwayat consent (timestamp, consent_given, policy_version).

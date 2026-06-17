@@ -3,7 +3,7 @@ from rest_framework import status
 from django.contrib.auth.models import User
 from koans.k01_data_minimization.models import UserProfile
 from koans.k02_explicit_consent.models import ConsentLog
-from koans.k05_data_portability.models import UserTransaction
+from koans.k05_data_portability.models import UserTransaction, DataExportJob
 
 class DataPortabilityTestCase(APITestCase):
 
@@ -56,8 +56,22 @@ class DataPortabilityTestCase(APITestCase):
             shipping_address="Jakarta"
         )
 
-    def test_01_successful_export_format(self):
-        """Koan 5A: Memastikan ekspor data sukses (HTTP 200) dengan isi agregasi data lengkap dari 3 tabel"""
+    def test_01_basic_prevent_idor_attacks(self):
+        """[Basic] Koan 5A: Memastikan sistem memblokir serangan IDOR/BOLA (HTTP 403) jika user mencoba mengekspor data orang lain"""
+        self.client.force_authenticate(user=self.user)
+        
+        # Coba eksploitasi URL dengan menyisipkan email User 2 (korban) lewat query parameter
+        url = f'/api/users/export-data/?email={self.other_user.email}'
+        response = self.client.get(url)
+        
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+            msg="Celah IDOR/BOLA terdeteksi! User diizinkan memicu ekspor atau mengintip data email milik user lain lewat parameter."
+        )
+
+    def test_02_intermediate_successful_export_format(self):
+        """[Intermediate] Koan 5B: Memastikan ekspor data sukses (HTTP 200) dengan isi agregasi data lengkap dari 3 tabel"""
         self.client.force_authenticate(user=self.user)
         
         response = self.client.get('/api/users/export-data/')
@@ -97,17 +111,44 @@ class DataPortabilityTestCase(APITestCase):
             msg="Jumlah riwayat transaksi yang diekspor tidak sesuai (seharusnya 2 transaksi)!"
         )
 
-    def test_02_prevent_idor_attacks(self):
-        """Koan 5B: Memastikan sistem memblokir serangan IDOR/BOLA (HTTP 403) jika user mencoba mengekspor data orang lain"""
-        # Login sebagai User 1
+    def test_03_advanced_async_export_trigger(self):
+        """[Advanced] Koan 5C: Memastikan request dengan async=true menghasilkan HTTP 202 Accepted dan DataExportJob baru"""
         self.client.force_authenticate(user=self.user)
         
-        # Coba eksploitasi URL dengan menyisipkan email User 2 (korban) lewat query parameter
-        url = f'/api/users/export-data/?email={self.other_user.email}'
+        response = self.client.get('/api/users/export-data/?async=true')
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_202_ACCEPTED,
+            msg="Request dengan parameter async=true seharusnya mengembalikan status HTTP 202 Accepted!"
+        )
+        
+        self.assertIn("job_id", response.data, msg="Response async export harus mengembalikan 'job_id'")
+        self.assertEqual(response.data["status"], "PENDING", msg="Status awal job baru harus 'PENDING'")
+        
+        # Pastikan data tersimpan di database
+        job_exists = DataExportJob.objects.filter(id=response.data["job_id"]).exists()
+        self.assertTrue(job_exists, msg="DataExportJob tidak tersimpan di database!")
+
+    def test_04_advanced_async_export_polling(self):
+        """[Advanced] Koan 5D: Menguji endpoint polling status pekerjaan ekspor data"""
+        self.client.force_authenticate(user=self.user)
+        
+        # Buat dummy job terlebih dahulu
+        job = DataExportJob.objects.create(
+            user_email=self.user.email,
+            status="PENDING"
+        )
+        
+        # Polling status pekerjaan ekspor
+        url = f'/api/users/export-data/?job_id={job.id}'
         response = self.client.get(url)
         
         self.assertEqual(
             response.status_code,
-            status.HTTP_403_FORBIDDEN,
-            msg="Celah IDOR/BOLA terdeteksi! User diizinkan memicu ekspor atau mengintip data email milik user lain lewat parameter."
+            status.HTTP_200_OK,
+            msg="Endpoint polling status pekerjaan ekspor harus mengembalikan HTTP 200 OK!"
         )
+        
+        # Verifikasi data
+        self.assertEqual(response.data["status"], "COMPLETED", msg="Pekerjaan ekspor yang di-polling harus berubah menjadi COMPLETED")
+        self.assertIsNotNone(response.data["download_url"], msg="Hasil polling harus menyertakan download_url")

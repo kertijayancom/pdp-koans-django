@@ -8,3 +8,13 @@ class UserTransaction(models.Model):
 
     class Meta:
         db_table = 'pdp_user_transactions'
+
+
+class DataExportJob(models.Model):
+    user_email = models.EmailField()
+    status = models.CharField(max_length=20, default='PENDING')  # PENDING, COMPLETED, FAILED
+    download_url = models.URLField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'pdp_data_export_jobs'
