@@ -96,10 +96,11 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 ### 🛡️ Koan 6: Data Breach Response & Incident Containment (Pasal 35 UU PDP)
 * **Goal**: Detect compromised accounts, restrict their access, and generate a BPPA-compliant incident notification report.
 * **Learning Notes & Hints**: [koans/k06_breach_response/README.md](koans/k06_breach_response/README.md)
-* **Files to Edit**: [koans/k06_breach_response/views.py](koans/k06_breach_response/views.py)
-* **Task**:
-  1. Implement an account lockout logic that blocks access (returns `423 Locked`) to sensitive endpoints if the authenticated user has `is_compromised = True`.
-  2. Complete the incident notification report generator to return a standardized JSON report containing all fields mandated by Article 35 of UU PDP, and persist the reported status.
+* **Files to Edit**: [koans/k06_breach_response/views.py](koans/k06_breach_response/views.py), [koans/k06_breach_response/models.py](koans/k06_breach_response/models.py)
+* **Tasks by Level**:
+  * **[Basic]**: Implement an account lockout logic that blocks access (returns `423 Locked`) to sensitive endpoints if the authenticated user has `is_compromised = True` (Python attribute) or is in the `CompromisedUser` list.
+  * **[Intermediate]**: Complete the incident notification report generator to return a standardized JSON report containing all fields mandated by Article 35 of UU PDP, and persist the reported status.
+  * **[Advanced]**: Implement an automatic incident containment logic. If a request has `?trigger_anomaly=true`, automatically register the user as compromised in the database and lock them out.
 
 ### 🛡️ Koan 7: Data Deletion & Anonymisation (Pasal 16 & 43 / Right to be Forgotten)
 * **Goal**: Safely process account deletion requests by deleting personal records while anonymizing transactional data.
