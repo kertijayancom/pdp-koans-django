@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from koans.k06_breach_response.models import IncidentReport
+from koans.k06_breach_response.models import IncidentReport, CompromisedUser
 
 class SecureSensitiveResourceView(APIView):
     """
@@ -14,9 +14,19 @@ class SecureSensitiveResourceView(APIView):
 
     def get(self, request, *args, **kwargs):
         # -------------------------------------------------------------------------
-        # TANTANGAN KOAN 6A: Incident Containment (Auto Account Lockout)
-        # Jika akun terindikasi retak (periksa wewenang `getattr(request.user, 'is_compromised', False)`),
-        # segera tolak akses dan kembalikan status HTTP 423 Locked untuk mengisolasi kebocoran.
+        # TANTANGAN KOAN 6C: Deteksi Anomali & Containment Otomatis (Level: Advanced)
+        # Jika query parameter `trigger_anomaly` bernilai 'true', sistem secara otomatis
+        # mendaftarkan email pengguna ke model `CompromisedUser` di database dengan status
+        # `is_compromised = True`, lalu mengembalikan HTTP 423 Locked.
+        # -------------------------------------------------------------------------
+        
+        # TODO: Implementasikan deteksi anomali otomatis di sini.
+
+        # -------------------------------------------------------------------------
+        # TANTANGAN KOAN 6A: Incident Containment / Lockout (Level: Basic)
+        # Cek apakah akun terkompromi via Python attribute `is_compromised` atau
+        # tercatat di database `CompromisedUser` dengan status compromised.
+        # Jika ya, segera kembalikan status HTTP 423 Locked.
         # -------------------------------------------------------------------------
         
         # TODO: Tulis logika isolasi akun di sini.
@@ -36,7 +46,7 @@ class BreachNotificationReportView(APIView):
         incident_id = request.data.get('incident_id')
         
         # -------------------------------------------------------------------------
-        # TANTANGAN KOAN 6B: BPPA Incident Report Generator (Pasal 35)
+        # TANTANGAN KOAN 6B: BPPA Incident Report Generator (Level: Intermediate)
         # 1. Cari `IncidentReport` berdasarkan `incident_id`. Jika tidak ketemu,
         #    kembalikan HTTP 404 Not Found.
         # 2. Susun data respons dengan skema JSON yang wajib dilaporkan sesuai Pasal 35 UU PDP:
@@ -49,7 +59,7 @@ class BreachNotificationReportView(APIView):
         # 4. Kembalikan respons terstruktur tersebut dengan status HTTP 200 OK.
         # -------------------------------------------------------------------------
         
-        # TODO: Implementasikan pencarian insiden, pembuatan laporan BPPA, dan update status.
+        # TODO: Implementasikan pencarian insiden, pembuatan laporan BPPA, dan update status di sini.
 
         # Placeholder output sementara (Belum sesuai standar Pasal 35!)
         return Response(

@@ -25,28 +25,48 @@ Aspek penanganan insiden dan pelaporan cepat ini sangat krusial karena:
 
 ---
 
-## 3. Apa yang Test-nya Ajarkan (What the Test Teaches)
+## 3. Tingkat Kesulitan (Difficulty Levels)
 
-Unit test pada Koan 06 menguji kesiapan mitigasi insiden pada aplikasi Anda:
-1. **Verifikasi Isolasi Sumber Daya (`test_compromised_user_blocked`)**:
-   - Memastikan pengguna yang memiliki flag `is_compromised = True` diblokir aksesnya dari API sensitif dan menerima HTTP status `423 Locked`.
-   - Ini melatih pengembang untuk menaruh filter status akun di tingkat *middleware* atau *permission classes* untuk melumpuhkan akun bermasalah secara instan.
-2. **Kesesuaian Format Laporan Hukum (`test_breach_notification_report_generation`)**:
-   - Memverifikasi generator laporan menghasilkan format JSON dengan informasi wajib: `data_breached_details`, `incident_timestamp`, dan `mitigation_steps_taken`.
+Tantangan ini dibagi menjadi tiga tingkat kesulitan:
+
+1. **[Basic] Incident Containment / Lockout (`test_01_basic_containment_locks_compromised_account`)**:
+   - Memblokir akses secara instan ke endpoint sensitif jika pengguna memiliki flag `is_compromised = True` (pada atribut Python objek user) atau terdaftar di database `CompromisedUser`, kemudian mengembalikan status `423 Locked`.
+2. **[Intermediate] Generator Laporan BPPA (`test_02_intermediate_bppa_report_structure_and_persistence`)**:
+   - Mencari informasi insiden kebocoran data berdasarkan `incident_id` pada model `IncidentReport`.
+   - Mengubah status `reported_to_bppa` menjadi `True` pada database dan mengembalikan struktur data resmi sesuai Pasal 35 ayat (1) UU PDP.
+3. **[Advanced] Otomatisasi Deteksi Anomali & Containment (`test_03_advanced_automatic_threat_containment`)**:
+   - Mensimulasikan deteksi ancaman otomatis. Jika request dikirim dengan parameter pemicu `?trigger_anomaly=true`, sistem harus otomatis mencatat email pengguna tersebut ke dalam tabel `CompromisedUser` dengan status `is_compromised = True` di database, dan langsung mengunci aksesnya saat itu juga serta pada request berikutnya.
 
 ---
 
 ## 4. Kisi-Kisi (Hints)
 
-Untuk menyelesaikan tantangan ini:
-- **Lockout Logika (Containment)**:
-  Tulis logika pemeriksaan di *view* atau *permission class* Anda. Jika `request.user.is_compromised` bernilai `True`, segera hentikan eksekusi dan kembalikan `Response(status=status.HTTP_423_LOCKED)`.
-- **Generator Laporan**:
-  Gunakan model `BreachIncident` (atau representasi insiden di database) untuk menyusun payload JSON yang komprehensif. Pastikan seluruh field wajib Pasal 35 UU PDP terisi sebelum mengembalikan data dengan status `200 OK`.
+### Level Basic
+- Cek apakah akun terindikasi kompromi via properti Python: `getattr(request.user, 'is_compromised', False)`.
+- Cek juga di database menggunakan `CompromisedUser.objects.filter(user_email=request.user.email, is_compromised=True).exists()`.
+- Jika salah satu bernilai `True`, segera kembalikan respons dengan status `status.HTTP_423_LOCKED`.
+
+### Level Intermediate
+- Cari insiden dengan `IncidentReport.objects.get(id=incident_id)`. Tangani jika tidak ditemukan (`IncidentReport.DoesNotExist`) dengan status `404 Not Found`.
+- Set `incident.reported_to_bppa = True` dan simpan ke database (`incident.save()`).
+- Bangun JSON output dengan format pemetaan:
+  - `incident_id` -> `incident.id`
+  - `incident_time` -> `incident.timestamp.isoformat()`
+  - `failure_cause` -> `incident.root_cause`
+  - `affected_users` -> `incident.impacted_subjects_count`
+  - `mitigation_actions` -> `incident.remediation_actions`
+
+### Level Advanced
+- Di awal method `get()`, periksa jika parameter query `trigger_anomaly` bernilai `'true'`.
+- Jika ya, jalankan metode upsert di database:
+  `CompromisedUser.objects.update_or_create(user_email=request.user.email, defaults={"is_compromised": True})`
+- Segera kembalikan respons `423 Locked` dengan pesan peringatan keamanan.
 
 ---
 
-## 5. Studi Kasus Berpikir Kritis (Critical Thinking Case Study)
+## 5. Studi Kasus Berpirik Kritis (Critical Thinking Case Study)
 
-1. *Dalam skenario peretasan massal, ribuan akun dapat terkompromi dalam hitungan detik. Melakukan pelabelan status `is_compromised = True` secara manual oleh administrator satu per satu sangat tidak efisien. Bagaimana cara merancang arsitektur sistem deteksi otomatis (IDS/IPS) yang terintegrasi dengan Application Performance Monitoring (APM) untuk mendeteksi anomali traffic (misalnya: lonjakan request ekspor data dari satu IP) dan langsung mengunci akun tersebut secara otomatis?*
-2. *Ketika sistem aplikasi dikunci sebagian (locked out) karena status kompromi, bagaimana cara kita menyediakan alur pemulihan akun (account recovery flow) yang aman bagi pengguna yang sah untuk membuktikan identitas mereka kembali tanpa membuka celah bagi peretas (misalnya melalui verifikasi multi-faktor / MFA out-of-band)?*
+1. **Skalabilitas Deteksi Otomatis (IDS/IPS)**:
+   *Dalam skenario peretasan massal, ribuan akun dapat terkompromi dalam hitungan detik. Melakukan pelabelan status `is_compromised = True` secara manual oleh administrator satu per satu sangat tidak efisien. Bagaimana cara merancang arsitektur sistem deteksi otomatis (IDS/IPS) yang terintegrasi dengan Application Performance Monitoring (APM) untuk mendeteksi anomali traffic (misalnya: lonjakan request ekspor data dari satu IP) dan langsung mengunci akun tersebut secara otomatis?*
+2. **Alur Pemulihan yang Aman (Account Recovery)**:
+   *Ketika sistem aplikasi dikunci sebagian (locked out) karena status kompromi, bagaimana cara kita menyediakan alur pemulihan akun (account recovery flow) yang aman bagi pengguna yang sah untuk membuktikan identitas mereka kembali tanpa membuka celah bagi peretas (misalnya melalui verifikasi multi-faktor / MFA out-of-band)?*
