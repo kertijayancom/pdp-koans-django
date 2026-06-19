@@ -8,6 +8,7 @@ import re
 from koans.k01_data_minimization.models import UserProfile
 from koans.k02_explicit_consent.models import ConsentLog
 from koans.k05_data_portability.models import UserTransaction
+from koans.k07_deletion_anonymisation.models import DeletionRequest
 
 User = get_user_model()
 
@@ -63,47 +64,69 @@ class DataDeletionAnonymisationTestCase(TestCase):
         self.url = reverse('pdp-delete')
         self.client.force_authenticate(user=self.user)
 
-    def test_unauthenticated_access_denied(self):
+    def test_01_unauthenticated_access_denied(self):
         """Koan 07: Deletion request must require authentication"""
         self.client.force_authenticate(user=None)
         response = self.client.delete(self.url)
         status_code = response.status_type if hasattr(response, 'status_type') else response.status_code
         self.assertIn(status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
 
-
-    def test_account_deletion_and_anonymisation(self):
-        """Koan 07: Deleting account hard-deletes user info but anonymizes transaction logs"""
+    def test_02_basic_hard_delete(self):
+        """[Basic] Koan 07A: Memastikan data identitas utama (User, Profile, ConsentLog) berhasil dihapus permanen"""
         response = self.client.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
-        # 1. Check user and user profile are hard-deleted
+        # Cek User dan User Profile terhapus secara fisik
         self.assertFalse(User.objects.filter(email=self.email).exists())
         self.assertFalse(UserProfile.objects.filter(email=self.email).exists())
 
-        # 2. Check consent logs are hard-deleted
+        # Cek Consent Log terhapus secara fisik
         self.assertFalse(ConsentLog.objects.filter(user_email=self.email).exists())
 
-        # 3. Check transactions are NOT deleted but anonymized
+    def test_03_intermediate_deletion_and_anonymisation(self):
+        """[Intermediate] Koan 07B: Memastikan data transaksi historis tetap utuh tetapi dianonimkan dengan format yang benar"""
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Total transaksi di database harus tetap 3 (2 milik Jane + 1 milik orang lain)
         tx_count = UserTransaction.objects.count()
-        # Total transactions (2 from Jane + 1 from other) must still be 3
         self.assertEqual(tx_count, 3)
 
-        # Verify Jane's transactions are anonymized
         self.tx1.refresh_from_db()
         self.tx2.refresh_from_db()
         self.other_tx.refresh_from_db()
 
-        # The other user's transaction must remain intact
+        # Transaksi orang lain tidak boleh berubah
         self.assertEqual(self.other_tx.user_email, "other.user@example.com")
 
-        # Jane's transactions must now have anonymous_user_xxxx@pdp.local
+        # Transaksi Jane tidak boleh lagi menggunakan email aslinya
         self.assertNotEqual(self.tx1.user_email, self.email)
         self.assertNotEqual(self.tx2.user_email, self.email)
 
-        # Match format 'anonymous_user_xxxx@pdp.local'
+        # Pastikan format email anonim sesuai regex pattern
         email_pattern = re.compile(r'^anonymous_user_[a-zA-Z0-9\-]+@pdp\.local$')
-        self.assertTrue(email_pattern.match(self.tx1.user_email), f"Email {self.tx1.user_email} does not match anonymisation pattern.")
-        self.assertTrue(email_pattern.match(self.tx2.user_email), f"Email {self.tx2.user_email} does not match anonymisation pattern.")
+        self.assertTrue(email_pattern.match(self.tx1.user_email), f"Email {self.tx1.user_email} tidak cocok dengan pola anonimisasi.")
+        self.assertTrue(email_pattern.match(self.tx2.user_email), f"Email {self.tx2.user_email} tidak cocok dengan pola anonimisasi.")
 
-        # Ensure the random parts are unique/stable per operation or consistent
-        self.assertIsNotNone(self.tx1.user_email)
+    def test_04_advanced_delayed_deletion_trigger(self):
+        """[Advanced] Koan 07C: Request dengan parameter delayed=true menonaktifkan user dan mencatat permintaan ekspor asinkron"""
+        url_delayed = f"{self.url}?delayed=true"
+        response = self.client.delete(url_delayed)
+        
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_202_ACCEPTED,
+            msg="Request dengan parameter delayed=true seharusnya mengembalikan status HTTP 202 Accepted!"
+        )
+        
+        # User harus dinonaktifkan (soft delete) agar tidak bisa login/akses sistem
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active, msg="User yang meminta penghapusan tertunda harus dinonaktifkan (is_active = False)!")
+
+        # Pastikan permintaan terekam di tabel DeletionRequest database
+        request_exists = DeletionRequest.objects.filter(user_email=self.email, status='PENDING').exists()
+        self.assertTrue(request_exists, msg="Permintaan penghapusan tertunda tidak tercatat di database DeletionRequest!")
+
+        # Data fisik profil dan transaksi harus tetap ada (belum terhapus sinkron)
+        self.assertTrue(UserProfile.objects.filter(email=self.email).exists())
+        self.assertEqual(UserTransaction.objects.filter(user_email=self.email).count(), 2)

@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from django.db import transaction
 import uuid
 
 # Impor model yang dibutuhkan
@@ -9,6 +10,7 @@ from django.contrib.auth import get_user_model
 from koans.k01_data_minimization.models import UserProfile
 from koans.k02_explicit_consent.models import ConsentLog
 from koans.k05_data_portability.models import UserTransaction
+from koans.k07_deletion_anonymisation.models import DeletionRequest
 
 User = get_user_model()
 
@@ -18,26 +20,36 @@ class UserDeleteAccountView(APIView):
     def delete(self, request, *args, **kwargs):
         """
         TANTANGAN KOAN 07: Penghapusan & Anonimisasi Data Pribadi (UU PDP Pasal 16 & 43 / Right to be Forgotten)
-        
-        Skenario:
-        Ketika seorang pengguna meminta akun mereka untuk dihapus:
-        1. Hapus secara permanen (hard-delete) data yang secara langsung mengidentifikasi mereka:
-           - User model (auth.User)
-           - UserProfile
-           - ConsentLog (pdp_consent_logs)
-        2. Anonimkan data transaksi historis mereka (UserTransaction) untuk kepentingan laporan keuangan:
-           - Ubah field `user_email` pada transaksi yang cocok menjadi 'anonymous_user_xxxx@pdp.local'
-             (di mana xxxx adalah UUID unik berdurasi 4-8 karakter atau string acak agar tidak saling bertabrakan).
-           - Jangan hapus data transaksi tersebut!
-           
-        Gunakan database transaction block (`transaction.atomic`) untuk memastikan proses ini aman dan konsisten.
         """
         user = request.user
         email = user.email
+
+        # -------------------------------------------------------------------------
+        # TANTANGAN KOAN 07C: Asynchronous Delayed Deletion (Level: Advanced)
+        # Jika query parameter `delayed` bernilai 'true', buat record `DeletionRequest`
+        # baru di database dengan status 'PENDING', nonaktifkan akun user (`is_active = False`),
+        # dan kembalikan status HTTP 202 Accepted.
+        # -------------------------------------------------------------------------
         
+        # TODO: Implementasikan pemicu penghapusan tertunda secara asinkron di sini.
+
         # -------------------------------------------------------------------------
-        # TULIS SOLUSI ANDA DI SINI
+        # TANTANGAN KOAN 07A & 07B: Deletion (Basic) & Anonymisation (Intermediate)
+        # Lakukan penghapusan data profil & consent dan anonimisasi data transaksi secara atomik.
+        # Aturan:
+        # 1. Hapus secara permanen (hard-delete) data yang secara langsung mengidentifikasi mereka:
+        #    - User model (auth.User)
+        #    - UserProfile
+        #    - ConsentLog (pdp_consent_logs)
+        # 2. Anonimkan data transaksi historis mereka (UserTransaction) untuk kepentingan laporan keuangan:
+        #    - Ubah field `user_email` pada transaksi yang cocok menjadi 'anonymous_user_xxxx@pdp.local'
+        #      (di mana xxxx adalah UUID unik berdurasi 4-8 karakter atau string acak agar tidak saling bertabrakan).
+        #    - Jangan hapus data transaksi tersebut!
+        #            
+        # Gunakan database transaction block (`transaction.atomic`) untuk memastikan proses ini aman dan konsisten.
         # -------------------------------------------------------------------------
+        
+        # TODO: Implementasikan penghapusan dan anonimisasi secara atomik di sini.
 
         # Placeholder response sebelum Anda mengimplementasikan logika di atas.
         # Anda harus mengembalikan Response dengan status HTTP_204_NO_CONTENT jika berhasil.
@@ -45,5 +57,3 @@ class UserDeleteAccountView(APIView):
             {"message": "Implement deletion and anonymisation flow here."},
             status=status.HTTP_501_NOT_IMPLEMENTED
         )
-
-

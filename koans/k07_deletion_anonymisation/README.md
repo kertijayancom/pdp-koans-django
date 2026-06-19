@@ -27,31 +27,57 @@ Aspek penghapusan dan anonimisasi ini sangat penting karena:
 
 ---
 
-## 3. Apa yang Test-nya Ajarkan (What the Test Teaches)
+## 3. Tingkat Kesulitan (Difficulty Levels)
 
-Unit test pada Koan 07 memverifikasi ketepatan eksekusi kedua metode pembersihan tersebut:
-1. **Verifikasi Penghapusan Fisik (`test_account_deletion_and_anonymisation` - Bagian 1 & 2)**:
-   - Memastikan bahwa model `User`, `UserProfile`, dan `ConsentLog` benar-benar sudah tidak ada lagi di database pasca request penghapusan.
-2. **Verifikasi Integritas Transaksi (`test_account_deletion_and_anonymisation` - Bagian 3)**:
-   - Memastikan bahwa jumlah data `UserTransaction` di database tetap utuh (tidak berkurang).
-   - Memverifikasi bahwa data email pada transaksi berubah format menjadi `anonymous_user_xxxx@pdp.local` (sesuai pola ekspresi reguler anonymisation).
+Tantangan ini dibagi menjadi tiga tingkat kesulitan:
+
+1. **[Basic] Penghapusan Fisik (Hard-Delete) (`test_02_basic_hard_delete`)**:
+   - Menghapus secara permanen data langsung identitas pengguna (`User`, `UserProfile`, dan `ConsentLog`) dari database pasca permohonan penghapusan akun.
+2. **[Intermediate] Anonimisasi Transaksi Historis (`test_03_intermediate_deletion_and_anonymisation`)**:
+   - Melakukan anonimisasi pada data transaksi finansial (`UserTransaction`) dengan mengubah field `user_email` menjadi `anonymous_user_<uuid>@pdp.local` tanpa menghapus baris transaksi demi menjaga integritas data keuangan perusahaan.
+   - Menjamin integritas pemrosesan dengan membungkus operasi penghapusan dan anonimisasi dalam satu transaksi database atomik (`transaction.atomic()`).
+3. **[Advanced] Asynchronous Delayed Deletion (`test_04_advanced_delayed_deletion_trigger`)**:
+   - Menyediakan fitur penghapusan tertunda secara asinkron untuk menangani data skala besar. Jika parameter `delayed=true` dikirim via query string:
+     - Buat catatan permintaan baru di model `DeletionRequest` dengan status `PENDING`.
+     - Matikan akses user ke sistem secara instan dengan mengubah properti `is_active = False` pada objek user (soft-delete), tanpa melakukan penghapusan fisik secara sinkron.
+     - Kembalikan respons HTTP `202 Accepted`.
 
 ---
 
 ## 4. Kisi-Kisi (Hints)
 
-Untuk menyelesaikan tantangan ini:
-- **Urutan Operasi & Transaksi**:
-  Lakukan modifikasi data di dalam blok transaksi Django (`with transaction.atomic():`). Hal ini sangat krusial karena jika proses penghapusan profil berhasil tetapi anonimisasi transaksi gagal, database akan berada dalam kondisi tidak konsisten.
-- **Anonimisasi Terlebih Dahulu**:
-  Lakukan pembaruan (`.update(user_email=anon_email)`) pada data `UserTransaction` terlebih dahulu sebelum menghapus akun user. Jika Anda menghapus objek `user` terlebih dahulu, Anda akan kehilangan referensi alamat email asli mereka yang digunakan untuk mem-filter transaksi yang ingin dianomkan.
-- **Membuat Email Anonim**:
-  Gunakan library bawaan Python `uuid` untuk membuat string acak yang unik agar alamat email tersamar tidak saling bertabrakan:
-  `unique_suffix = uuid.uuid4().hex[:8]`
+### Level Basic
+- Hapus data profile pengguna dengan `UserProfile.objects.filter(email=email).delete()`.
+- Hapus log persetujuan dengan `ConsentLog.objects.filter(user_email=email).delete()`.
+- Hapus akun pengguna dengan `user.delete()`.
+
+### Level Intermediate
+- Gunakan blok transaksi atomik:
+  ```python
+  from django.db import transaction
+  with transaction.atomic():
+      # Logika pembaruan & penghapusan data
+  ```
+- Lakukan anonimisasi transaksi sebelum user dihapus:
+  ```python
+  import uuid
+  unique_suffix = uuid.uuid4().hex[:8]
+  anon_email = f"anonymous_user_{unique_suffix}@pdp.local"
+  UserTransaction.objects.filter(user_email=email).update(user_email=anon_email)
+  ```
+
+### Level Advanced
+- Cek jika parameter query `delayed` bernilai `'true'`:
+  - Buat baris baru di `DeletionRequest` dengan status `'PENDING'`.
+  - Ubah status user: `user.is_active = False` dan jalankan `user.save()`.
+  - Kembalikan `Response` dengan status `status.HTTP_202_ACCEPTED`.
 
 ---
 
 ## 5. Studi Kasus Berpikir Kritis (Critical Thinking Case Study)
 
-1. *Menganonimkan jutaan baris data transaksi secara sinkron (langsung di dalam kode View API request-response) dapat menyebabkan server hang karena waktu pemrosesan database query yang lama. Bagaimana cara merancang arsitektur pembersihan data secara asinkron (background job) yang aman, di mana status akun langsung berubah "Deleted" untuk pengguna, namun proses pembersihan dan anonimisasi data di database berjalan di latar belakang (Queue worker) secara bertahap?*
-2. *Bagaimana jika database Anda direplikasi ke server cadangan (Read Replicas) atau di-backup secara harian (Cold Backup)? Hukum PDP mewajibkan penghapusan data secara menyeluruh. Bagaimana kebijakan dan prosedur teknis Anda untuk memastikan data pribadi yang telah dihapus di database utama juga benar-benar ikut musnah dari file backup lama (misalnya menggunakan Crypto-shredding)?*
+1. **Pemrosesan Data Skala Besar (Batch Processing)**:
+   *Menganonimkan jutaan baris data transaksi secara sinkron (langsung di dalam kode View API request-response) dapat menyebabkan server hang karena waktu pemrosesan database query yang lama. Bagaimana cara merancang arsitektur pembersihan data secara asinkron (background job) yang aman, di mana status akun langsung berubah "Deleted" untuk pengguna, namun proses pembersihan dan anonimisasi data di database berjalan di latar belakang (Queue worker) secara bertahap?*
+2. **Penghapusan Cadangan (Cold Backups & Crypto-shredding)**:
+   *Bagaimana jika database Anda direplikasi ke server cadangan (Read Replicas) atau di-backup secara harian (Cold Backup)? Hukum PDP mewajibkan penghapusan data secara menyeluruh. Bagaimana kebijakan dan prosedur teknis Anda untuk memastikan data pribadi yang telah dihapus di database utama juga benar-benar ikut musnah dari file backup lama (misalnya menggunakan Crypto-shredding)?*
+

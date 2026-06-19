@@ -105,10 +105,11 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 ### 🛡️ Koan 7: Data Deletion & Anonymisation (Pasal 16 & 43 / Right to be Forgotten)
 * **Goal**: Safely process account deletion requests by deleting personal records while anonymizing transactional data.
 * **Learning Notes & Hints**: [koans/k07_deletion_anonymisation/README.md](koans/k07_deletion_anonymisation/README.md)
-* **Files to Edit**: [koans/k07_deletion_anonymisation/views.py](koans/k07_deletion_anonymisation/views.py)
-* **Task**:
-  1. Perform a hard-delete on directly identifying user data (User account, UserProfile, ConsentLog).
-  2. Anonymize historical transaction logs (`UserTransaction`) by replacing the user's email with a pseudonymous placeholder (`anonymous_user_xxxx@pdp.local`) to preserve metrics for financial audits without leaking identity.
+* **Files to Edit**: [koans/k07_deletion_anonymisation/views.py](koans/k07_deletion_anonymisation/views.py), [koans/k07_deletion_anonymisation/models.py](koans/k07_deletion_anonymisation/models.py)
+* **Tasks by Level**:
+  * **[Basic]**: Perform a hard-delete on directly identifying user data (User account, UserProfile, ConsentLog).
+  * **[Intermediate]**: Anonymize historical transaction logs (`UserTransaction`) by replacing the user's email with a pseudonymous placeholder (`anonymous_user_xxxx@pdp.local`) to preserve metrics for financial audits. Wrap operations in an atomic transaction block.
+  * **[Advanced]**: Implement a delayed/asynchronous deletion flow. If query parameter `delayed=true` is sent, register a `DeletionRequest` in the database, deactivate the user account immediately, and return `202 Accepted`.
 
 ### 🛡️ Koan 8: Consent Withdrawal (Pasal 15 & 40)
 * **Goal**: Allow users to revoke their consent, record the withdrawal log, and automatically restrict active data processing.
