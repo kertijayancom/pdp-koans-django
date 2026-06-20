@@ -25,30 +25,44 @@ Aspek pembatasan tujuan ini sangat krusial karena:
 
 ---
 
-## 3. Apa yang Test-nya Ajarkan (What the Test Teaches)
+## 3. Tingkat Kesulitan (Difficulty Levels)
 
-Unit test pada Koan 09 memverifikasi kepatuhan sistem dalam membatasi pengiriman promosi:
-1. **Verifikasi Hak Akses Dispatcher (`test_non_admin_access_denied`)**:
-   - Memastikan bahwa endpoint pengiriman newsletter hanya dapat diakses oleh operator dengan izin tingkat tinggi (`IsAdminUser` / Staf Marketing yang sah). Pengguna biasa tidak boleh memicu pengiriman newsletter massal.
-2. **Uji Penyaringan Tujuan (`test_marketing_dispatch_filters_by_purpose_consent`)**:
-   - Memverifikasi bahwa daftar email penerima yang dihasilkan oleh API hanya berisi email pengguna yang memiliki atribut `marketing_consent = True`.
-   - Memastikan pengguna dengan `marketing_consent = False` (meskipun akun mereka aktif) disaring keluar dan aman dari pengiriman pesan promo.
+Tantangan ini dibagi menjadi tiga tingkat kesulitan:
+
+1. **[Basic] Penyaringan Tujuan Umum (`test_01_basic_marketing_dispatch_filters_by_general_consent`)**:
+   - Membatasi akses endpoint hanya untuk pengguna admin/staf (`IsAdminUser`).
+   - Menyaring data `UserProfile` untuk mendapatkan daftar email yang menyetujui komunikasi pemasaran umum (`marketing_consent = True`).
+2. **[Intermediate] Penyaringan Persetujuan Granular / Kategori (`test_02_intermediate_marketing_dispatch_by_granular_category`)**:
+   - Mendukung kampanye iklan modular. Jika request membawa parameter `category` (misal: `weekly_newsletter`), lakukan penyaringan menggunakan tabel pencocokan persetujuan granular `GranularMarketingConsent` di database di mana `consent_given = True` untuk kategori tersebut.
+3. **[Advanced] Pengecekan Kepatuhan Menyeluruh (`test_03_advanced_marketing_dispatch_excludes_inactive_or_compromised`)**:
+   - Menjamin bahwa sistem tidak akan pernah mengirimkan iklan promosi ke akun yang tidak aktif (`is_active = False` di database auth Django) atau akun yang sedang terkompromi (`is_compromised = True` di database `CompromisedUser`), bahkan jika mereka memiliki persetujuan iklan yang aktif.
 
 ---
 
 ## 4. Kisi-Kisi (Hints)
 
-Untuk menyelesaikan tantangan ini:
-- **Izin Akses**:
-  Gunakan permission class bawaan dari Django REST Framework `IsAdminUser` untuk membatasi akses endpoint ini hanya kepada administrator/staff.
-- **Penyaringan Database (Filtering)**:
-  - Lakukan kueri filter pada model `UserProfile` untuk mencari record yang memiliki nilai `marketing_consent` bernilai `True`.
-  - Gunakan metode `.values_list('email', flat=True)` pada Django ORM untuk menarik daftar string email saja secara efisien tanpa membebani memori server dengan instansiasi penuh objek model data.
-  - Kembalikan daftar tersebut dalam struktur response `{"recipients": list(consented_emails)}`.
+### Level Basic
+- Gunakan DRF Permission `IsAdminUser` pada view.
+- Ambil semua email pengguna yang menyetujui pemasaran:
+  `UserProfile.objects.filter(marketing_consent=True).values_list('email', flat=True)`
+
+### Level Intermediate
+- Periksa payload input request: `category = request.data.get('category')`.
+- Jika `category` diisi, filter pada model `GranularMarketingConsent`:
+  `GranularMarketingConsent.objects.filter(category=category, consent_given=True).values_list('user_email', flat=True)`
+
+### Level Advanced
+- Di luar pemeriksaan persetujuan, dapatkan daftar pengecualian (exclude):
+  - User tidak aktif: `User.objects.filter(is_active=False).values_list('email', flat=True)`
+  - User terkompromi: `CompromisedUser.objects.filter(is_compromised=True).values_list('user_email', flat=True)`
+- Lakukan penyaringan pada list akhir untuk mengeluarkan email yang masuk ke dalam daftar pengecualian di atas.
 
 ---
 
 ## 5. Studi Kasus Berpikir Kritis (Critical Thinking Case Study)
 
-1. *Bagaimana jika perusahaan memiliki berbagai jenis kategori promo (misalnya: promo makanan, promo gadget, dan newsletter mingguan)? Memiliki satu flag `marketing_consent` saja tidak cukup karena pengguna mungkin hanya ingin menyetujui promo makanan tapi menolak promo gadget. Bagaimana Anda merancang skema database untuk mendukung manajemen persetujuan yang dinamis dan modular (Granular/Modular Consent Management) sehingga pengguna memiliki kontrol penuh atas kategori iklan yang mereka terima?*
-2. *Dalam dunia pemasaran digital, organisasi sering kali menggunakan layanan pihak ketiga untuk mengirim email kampanye massal (seperti Mailchimp atau Sendgrid). Bagaimana Anda merancang arsitektur sinkronisasi data yang aman agar daftar kontak di Sendgrid/Mailchimp selalu sinkron dengan status `marketing_consent` terbaru di database utama kita secara real-time, menghindari terkirimnya email promosi ke pengguna yang baru saja mencabut persetujuannya (opt-out)?*
+1. **Desain Database Granular Consent**:
+   *Bagaimana jika perusahaan memiliki berbagai jenis kategori promo (misalnya: promo makanan, promo gadget, dan newsletter mingguan)? Memiliki satu flag `marketing_consent` saja tidak cukup karena pengguna mungkin hanya ingin menyetujui promo makanan tapi menolak promo gadget. Bagaimana Anda merancang skema database untuk mendukung manajemen persetujuan yang dinamis dan modular (Granular/Modular Consent Management) sehingga pengguna memiliki kontrol penuh atas kategori iklan yang mereka terima?*
+2. **Sinkronisasi Pihak Ketiga (Third-Party Sync)**:
+   *Dalam dunia pemasaran digital, organisasi sering kali menggunakan layanan pihak ketiga untuk mengirim email kampanye massal (seperti Mailchimp atau Sendgrid). Bagaimana Anda merancang arsitektur sinkronisasi data yang aman agar daftar kontak di Sendgrid/Mailchimp selalu sinkron dengan status `marketing_consent` terbaru di database utama kita secara real-time, menghindari terkirimnya email promosi ke pengguna yang baru saja mencabut persetujuannya (opt-out)?*
+

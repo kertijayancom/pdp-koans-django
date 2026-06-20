@@ -5,6 +5,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from koans.k01_data_minimization.models import UserProfile
+from koans.k09_purpose_limitation.models import GranularMarketingConsent
+from koans.k06_breach_response.models import CompromisedUser
 
 User = get_user_model()
 
@@ -46,28 +48,103 @@ class PurposeLimitationTestCase(TestCase):
 
         self.url = reverse('pdp-marketing-dispatch')
 
-    def test_non_admin_access_denied(self):
-        """Koan 09: Marketing dispatch must be restricted to admin/staff users"""
+    def test_01_basic_marketing_dispatch_filters_by_general_consent(self):
+        """[Basic] Koan 09A: Hanya admin yang bisa memicu dispatch, dan daftar disaring berdasarkan general consent"""
+        # Pengguna non-admin ditolak
         self.client.force_authenticate(user=self.regular_user)
         response = self.client.post(self.url)
-        status_code = response.status_type if hasattr(response, 'status_type') else response.status_code
-        self.assertEqual(status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_marketing_dispatch_filters_by_purpose_consent(self):
-        """Koan 09: Dispatch list must only include users who consented to marketing"""
+        # Pengguna admin berhasil
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.post(self.url)
-        
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("recipients", response.data)
+        
+        recipients = response.data["recipients"]
+        self.assertIn("optin@example.com", recipients)
+        self.assertNotIn("optout@example.com", recipients)
+        self.assertEqual(len(recipients), 1)
+
+    def test_02_intermediate_marketing_dispatch_by_granular_category(self):
+        """[Intermediate] Koan 09B: Penyaringan penerima newsletter berdasarkan kategori persetujuan granular (granular consent)"""
+        self.client.force_authenticate(user=self.admin_user)
+        
+        # Daftarkan persetujuan granular untuk kampanye 'weekly_newsletter'
+        GranularMarketingConsent.objects.create(
+            user_email="optin@example.com",
+            category="weekly_newsletter",
+            consent_given=True
+        )
+        GranularMarketingConsent.objects.create(
+            user_email="optout@example.com",
+            category="weekly_newsletter",
+            consent_given=False
+        )
+        
+        # Kirim kampanye kategori 'weekly_newsletter'
+        response = self.client.post(self.url, {"category": "weekly_newsletter"}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        recipients = response.data["recipients"]
+        self.assertIn("optin@example.com", recipients)
+        self.assertNotIn("optout@example.com", recipients)
+        self.assertEqual(len(recipients), 1)
+
+    def test_03_advanced_marketing_dispatch_excludes_inactive_or_compromised(self):
+        """[Advanced] Koan 09C: Menolak pengiriman promosi kepada pengguna tidak aktif atau akunnya terkompromi/diretas"""
+        self.client.force_authenticate(user=self.admin_user)
+        
+        # Daftarkan user baru dengan consent=True
+        User.objects.create_user(
+            username="inactive_user",
+            email="inactive@example.com",
+            password="SecurePassword123!"
+        )
+        UserProfile.objects.create(
+            username="inactive_user",
+            email="inactive@example.com",
+            phone_number="08144444444",
+            shipping_address="Malang",
+            marketing_consent=True
+        )
+        
+        # Ubah status user tersebut menjadi tidak aktif (is_active = False)
+        django_user = User.objects.get(email="inactive@example.com")
+        django_user.is_active = False
+        django_user.save()
+        
+        # Daftarkan user lain dengan consent=True tapi ditandai compromised di database
+        User.objects.create_user(
+            username="compromised_user",
+            email="compromised@example.com",
+            password="SecurePassword123!"
+        )
+        UserProfile.objects.create(
+            username="compromised_user",
+            email="compromised@example.com",
+            phone_number="08155555555",
+            shipping_address="Solo",
+            marketing_consent=True
+        )
+        CompromisedUser.objects.create(
+            user_email="compromised@example.com",
+            is_compromised=True
+        )
+
+        # Dispatch kampanye (default general consent)
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         recipients = response.data["recipients"]
         
-        # Must contain the user who opted-in
+        # Hanya 'optin@example.com' yang aktif & aman yang boleh menerima
         self.assertIn("optin@example.com", recipients)
         
-        # Must NOT contain the user who did not opt-in
-        self.assertNotIn("optout@example.com", recipients)
+        # User tidak aktif (inactive@example.com) disaring keluar
+        self.assertNotIn("inactive@example.com", recipients)
         
-        # Total recipients should be exactly 1
+        # User terkompromi (compromised@example.com) disaring keluar
+        self.assertNotIn("compromised@example.com", recipients)
+        
+        # Total penerima tetap 1
         self.assertEqual(len(recipients), 1)

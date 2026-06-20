@@ -122,10 +122,11 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 ### 🛡️ Koan 9: Purpose Limitation (Pasal 16 & 27 UU PDP)
 * **Goal**: Ensure user data is processed only for purposes the user has explicitly agreed to.
 * **Learning Notes & Hints**: [koans/k09_purpose_limitation/README.md](koans/k09_purpose_limitation/README.md)
-* **Files to Edit**: [koans/k09_purpose_limitation/views.py](koans/k09_purpose_limitation/views.py)
-* **Task**:
-  1. Verify the dispatcher has admin/staff permissions.
-  2. Filter list recipients to ensure promotional communications/newsletters are only dispatched to users who have explicitly opted-in to marketing communications (`marketing_consent = True`).
+* **Files to Edit**: [koans/k09_purpose_limitation/views.py](koans/k09_purpose_limitation/views.py), [koans/k09_purpose_limitation/models.py](koans/k09_purpose_limitation/models.py)
+* **Tasks by Level**:
+  * **[Basic]**: Verify the dispatcher has admin/staff permissions. Filter list recipients to ensure promotional communications/newsletters are only dispatched to users who have explicitly opted-in to marketing communications (`marketing_consent = True`).
+  * **[Intermediate]**: Support granular marketing campaigns. If a request has a specific `category`, filter recipients by matching category-based consent records in `GranularMarketingConsent` table.
+  * **[Advanced]**: Enforce comprehensive compliance filter check. Exclude users who have deactivated accounts (`is_active = False`) or have compromised accounts (`is_compromised = True`), ensuring no promotion communication is sent to them under any circumstances.
 
 ### 🛡️ Koan 10: Data Retention Policy (Pasal 16 & 43 UU PDP)
 * **Goal**: Implement automatic data purging mechanics to prevent storing sensitive records beyond their retention period.
