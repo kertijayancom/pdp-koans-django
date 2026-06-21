@@ -114,10 +114,11 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 ### 🛡️ Koan 8: Consent Withdrawal (Pasal 15 & 40)
 * **Goal**: Allow users to revoke their consent, record the withdrawal log, and automatically restrict active data processing.
 * **Learning Notes & Hints**: [koans/k08_consent_withdrawal/README.md](koans/k08_consent_withdrawal/README.md)
-* **Files to Edit**: [koans/k08_consent_withdrawal/views.py](koans/k08_consent_withdrawal/views.py)
-* **Task**:
-  1. Record the consent revocation event in `ConsentLog` (`consent_given = False`) for audit trail compliance.
-  2. Deactivate the user account (`is_active = False`) to prevent active operational data processing, while retaining historical data for legal retention purposes.
+* **Files to Edit**: [koans/k08_consent_withdrawal/views.py](koans/k08_consent_withdrawal/views.py), [koans/k08_consent_withdrawal/models.py](koans/k08_consent_withdrawal/models.py)
+* **Tasks by Level**:
+  * **[Basic]**: Record the consent revocation event in `ConsentLog` (`consent_given = False`) for audit trail compliance, and deactivate the user account (`is_active = False`) to prevent active operational data processing.
+  * **[Intermediate]**: Wrap both database logging and deactivation in an atomic database transaction.
+  * **[Advanced]**: Implement a session/token revocation blacklist. If the request body provides a `token_jti`, save it to the `RevokedToken` table in the database to instantly invalidate active JWT token sessions.
 
 ### 🛡️ Koan 9: Purpose Limitation (Pasal 16 & 27 UU PDP)
 * **Goal**: Ensure user data is processed only for purposes the user has explicitly agreed to.

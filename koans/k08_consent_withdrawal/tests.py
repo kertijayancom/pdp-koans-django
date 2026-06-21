@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from koans.k02_explicit_consent.models import ConsentLog
+from koans.k08_consent_withdrawal.models import RevokedToken
 
 User = get_user_model()
 
@@ -33,27 +34,42 @@ class ConsentWithdrawalTestCase(TestCase):
         self.url = reverse('pdp-withdraw-consent')
         self.client.force_authenticate(user=self.user)
 
-    def test_unauthenticated_access_denied(self):
+    def test_01_unauthenticated_access_denied(self):
         """Koan 08: Consent withdrawal request must require authentication"""
         self.client.force_authenticate(user=None)
         response = self.client.post(self.url, {"policy_version": "v1.0"})
         status_code = response.status_type if hasattr(response, 'status_type') else response.status_code
         self.assertIn(status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
 
-    def test_consent_withdrawal_success(self):
-        """Koan 08: Consent withdrawal successfully logs withdrawal and deactivates the account"""
+    def test_02_basic_consent_withdrawal_success(self):
+        """[Basic/Intermediate] Koan 08A/B: Penarikan persetujuan berhasil mencatat log withdrawal dan menonaktifkan akun"""
         response = self.client.post(self.url, {"policy_version": "v1.1"})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # 1. Verify that a new ConsentLog record is created with consent_given = False
+        # 1. Verifikasi log baru tersimpan (consent_given = False)
         logs = ConsentLog.objects.filter(user_email=self.email).order_by('-timestamp')
-        # There should now be 2 logs: initial consent (True) and withdrawal (False)
         self.assertEqual(logs.count(), 2)
         
         latest_log = logs.first()
         self.assertFalse(latest_log.consent_given)
         self.assertEqual(latest_log.policy_version, "v1.1")
 
-        # 2. Verify that the User account has been deactivated (is_active = False)
+        # 2. Verifikasi user dinonaktifkan
         self.user.refresh_from_db()
         self.assertFalse(self.user.is_active)
+
+    def test_03_advanced_session_revocation(self):
+        """[Advanced] Koan 08C: Menambahkan token JTI ke database pencabutan sesi (blacklist) saat penarikan persetujuan"""
+        response = self.client.post(self.url, {
+            "policy_version": "v1.1",
+            "token_jti": "jti_jwt_token_session_abc123"
+        }, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verifikasi token masuk ke daftar blacklist database
+        token_revoked = RevokedToken.objects.filter(
+            user_email=self.email,
+            token_jti="jti_jwt_token_session_abc123"
+        ).exists()
+        self.assertTrue(token_revoked, msg="Token JTI yang ditarik tidak terdaftar di database RevokedToken!")
