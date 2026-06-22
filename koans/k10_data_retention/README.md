@@ -26,34 +26,55 @@ Kebijakan retensi dan pemusnahan data otomatis ini sangat penting karena:
 
 ---
 
-## 3. Apa yang Test-nya Ajarkan (What the Test Teaches)
+## 3. Tingkat Kesulitan (Difficulty Levels)
 
-Unit test pada Koan 10 memverifikasi ketepatan logika penghapusan dan format umpan balik CLI command:
-1. **Uji Selektivitas Penghapusan (`test_purge_expired_logs_command` - Bagian 1)**:
-   - Memastikan bahwa log yang umurnya sudah melebihi batas waktu (seperti log usia 45 hari dan 60 hari pada skenario retensi 30 hari) benar-benar terhapus secara permanen dari tabel `ActionAuditLog`.
-   - Memastikan log yang masih baru (berusia di bawah 30 hari) tetap dipertahankan dan aman dari proses pembersihan.
-2. **Kesesuaian Output Console (`test_purge_expired_logs_command` - Bagian 2)**:
-   - Memverifikasi bahwa skrip CLI mencetak informasi status hasil pembersihan ke standard output dengan format yang tepat: `"Deleted X expired log records."`.
+Tantangan ini dibagi menjadi tiga tingkat kesulitan:
+
+1. **[Basic] Pembersihan Log Kedaluwarsa (`test_01_basic_purge_expired_logs`)**:
+   - Menghitung batas waktu (*threshold date*) berdasarkan parameter `--days` (default 365).
+   - Menghapus secara fisik record `ActionAuditLog` yang kedaluwarsa dan menulis output log `"Deleted X expired log records."` ke standard output CLI.
+2. **[Intermediate] Batch Deletion / Chunking (`test_02_intermediate_chunked_deletion`)**:
+   - Untuk menghindari penguncian tabel database pada log berskala besar, lakukan proses pembersihan secara bertahap menggunakan limit berukuran `--chunk-size` (default 1000) di dalam sebuah perulangan/loop hingga semua data kedaluwarsa terhapus.
+3. **[Advanced] Archival Policy / Cold Storage (`test_03_advanced_archival_before_deletion`)**:
+   - Mendukung kebijakan pengarsipan legal. Jika parameter `--archive` disertakan, sistem wajib mengekspor dan menyimpan data log yang kedaluwarsa ke dalam format file JSON di dalam folder `koans/k10_data_retention/archives/` sebelum data fisik tersebut dihapus permanen.
+   - Output log CLI harus berubah menjadi `"Archived and deleted X expired log records."`.
 
 ---
 
 ## 4. Kisi-Kisi (Hints)
 
-Untuk menyelesaikan tantangan ini:
-- **Menghitung Batas Waktu (Threshold Date)**:
-  - Gunakan `timezone.now()` (bawaan Django) untuk mendapatkan waktu server saat ini.
-  - Kurangi waktu saat ini dengan parameter jumlah hari yang diberikan menggunakan kelas `timedelta` dari modul `datetime`.
-  - Contoh rumus: `threshold_date = timezone.now() - timedelta(days=days)`.
-- **Query Filter & Delete**:
-  - Lakukan filter pada data `ActionAuditLog` yang memiliki kolom `timestamp` lebih kecil dari batas waktu (`timestamp__lt=threshold_date`).
-  - Panggil fungsi `.delete()` pada queryset hasil filter tersebut.
-  - Fungsi `.delete()` akan mengembalikan tuple. Ambil elemen pertama dari tuple tersebut untuk mendapatkan jumlah baris yang berhasil dihapus (`deleted_count`).
-- **Mencetak Hasil**:
-  Gunakan pemanggilan `self.stdout.write(...)` untuk mencetak pesan hasil ke console output Django Command.
+### Level Basic
+- Hitung batas tanggal kedaluwarsa:
+  `threshold_date = timezone.now() - timedelta(days=days)`
+- Hapus semua data yang memiliki timestamp lebih kecil dari batas:
+  `ActionAuditLog.objects.filter(timestamp__lt=threshold_date).delete()`
+- Tulis respons ke stdout:
+  `self.stdout.write(f"Deleted {X} expired log records.")`
+
+### Level Intermediate
+- Hapus data secara bertahap di dalam perulangan `while True:`:
+  1. Dapatkan list PK (ID) dari chunk pertama:
+     `expired_pks = list(ActionAuditLog.objects.filter(timestamp__lt=threshold_date).values_list('pk', flat=True)[:chunk_size])`
+  2. Jika `expired_pks` kosong, hentikan perulangan (`break`).
+  3. Lakukan penghapusan berdasarkan list PK tersebut:
+     `deleted_count, _ = ActionAuditLog.objects.filter(pk__in=expired_pks).delete()`
+
+### Level Advanced
+- Di awal method `handle()`, cek apakah `--archive` bernilai `True`.
+- Jika ya, buat folder archives jika belum ada:
+  ```python
+  import os
+  archive_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'archives')
+  os.makedirs(archive_dir, exist_ok=True)
+  ```
+- Sebelum proses hapus dimulai, kumpulkan dan konversikan objek data log yang kedaluwarsa ke tipe serialisasi JSON, lalu tulis ke berkas arsip menggunakan `json.dump()`.
 
 ---
 
 ## 5. Studi Kasus Berpikir Kritis (Critical Thinking Case Study)
 
-1. *Dalam sistem berskala besar, menjalankan query `DELETE` massal untuk jutaan data sekaligus dapat mengunci database (Table Lock), meningkatkan penggunaan CPU hingga 100%, dan mengganggu transaksi aktif pengguna. Bagaimana cara Anda mendesain skrip penghapusan berkala tersebut agar berjalan secara bertahap (Batch Deletion / Chunking) sehingga database tetap responsif (misal: menghapus maksimal 1000 baris per iterasi dengan jeda istirahat/sleep beberapa detik)?*
-2. *Bagaimana jika data yang ingin dimusnahkan tidak boleh dihapus secara fisik karena masih dibutuhkan oleh tim Data Science untuk analitik perilaku jangka panjang, namun kita tetap harus mematuhi UU PDP untuk menghapus identitas pribadi? Bagaimana Anda merancang arsitektur Anonymisation Pipeline di mana data produksi di-copy ke Data Warehouse/Data Lake, lalu disaring untuk menghilangkan seluruh kolom data pribadi sebelum log aslinya di database produksi dimusnahkan secara fisik (Cold Storage)?*
+1. **Batch Deletion (Lock Prevention)**:
+   *Dalam sistem berskala besar, menjalankan query `DELETE` massal untuk jutaan data sekaligus dapat mengunci database (Table Lock), meningkatkan penggunaan CPU hingga 100%, dan mengganggu transaksi aktif pengguna. Bagaimana cara Anda mendesain skrip penghapusan berkala tersebut agar berjalan secara bertahap (Batch Deletion / Chunking) sehingga database tetap responsif (misal: menghapus maksimal 1000 baris per iterasi dengan jeda istirahat/sleep beberapa detik)?*
+2. **Anonymisation Pipelines (Data Warehousing)**:
+   *Bagaimana jika data yang ingin dimusnahkan tidak boleh dihapus secara fisik karena masih dibutuhkan oleh tim Data Science untuk analitik perilaku jangka panjang, namun kita tetap harus mematuhi UU PDP untuk menghapus identitas pribadi? Bagaimana Anda merancang arsitektur Anonymisation Pipeline di mana data produksi di-copy ke Data Warehouse/Data Lake, lalu disaring untuk menghilangkan seluruh kolom data pribadi sebelum log aslinya di database produksi dimusnahkan secara fisik (Cold Storage)?*
+

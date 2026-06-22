@@ -133,10 +133,10 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 * **Goal**: Implement automatic data purging mechanics to prevent storing sensitive records beyond their retention period.
 * **Learning Notes & Hints**: [koans/k10_data_retention/README.md](koans/k10_data_retention/README.md)
 * **Files to Edit**: [koans/k10_data_retention/management/commands/purge_expired_logs.py](koans/k10_data_retention/management/commands/purge_expired_logs.py)
-* **Task**:
-  1. Calculate the threshold time delta based on a retention period parameter (in days).
-  2. Delete all `ActionAuditLog` records created prior to that threshold date.
-  3. Output the exact count of deleted records to stdout in the specified format.
+* **Tasks by Level**:
+  * **[Basic]**: Calculate the threshold time delta based on a retention period parameter (in days). Delete all `ActionAuditLog` records created prior to that threshold date, and output the count of deleted records in the specified format.
+  * **[Intermediate]**: Prevent database locking on large scale deletes by performing chunked batch deletion (`--chunk-size`) in a loop.
+  * **[Advanced]**: Implement a data archival step. If the `--archive` flag is set, backup/serialize the expired logs to a JSON file in the archives folder before physical deletion.
 
 
 ---
