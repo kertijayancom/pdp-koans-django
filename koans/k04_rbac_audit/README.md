@@ -37,7 +37,7 @@ Unit test pada Koan 04 menguji aspek-aspek berikut:
 2. **[Intermediate] test_02_dpo_allowed_and_logged**:
    - Memastikan DPO diizinkan masuk (`200 OK`) dan aktivitasnya sukses tercatat di log audit.
 3. **[Advanced] test_03_audit_log_hash_chain_integrity**:
-   - Memverifikasi bahwa setiap kali log baru dibuat, sistem otomatis mencari log terakhir di database, memautkan `previous_hash` dengan benar, dan menghitung `hash_signature` menggunakan SHA256 secara valid.
+   - Memverifikasi bahwa setiap kali log baru dibuat, sistem otomatis mencari log terakhir di database, memautkan `previous_hash` dengan benar, dan menghitung `hash_signature` menggunakan HMAC-SHA256 secara valid menggunakan kunci rahasia aplikasi.
 4. **[Advanced] test_04_audit_log_tamper_detection**:
    - Memverifikasi bahwa jika kita merusak isi data log (seperti mengubah IP asal secara manual di database) atau menghapus log di tengah rantai secara ilegal, fungsi verifikasi `AccessAuditLog.verify_integrity()` akan langsung mengembalikan nilai `False`.
 
@@ -46,11 +46,12 @@ Unit test pada Koan 04 menguji aspek-aspek berikut:
 ## 4. Kisi-Kisi (Hints)
 
 Untuk menyelesaikan tantangan ini:
-- **[Advanced] Menghitung Hash Signature**:
-  - Impor pustaka `hashlib` bawaan Python.
+- **[Advanced] Menghitung Hash Signature (HMAC-SHA256)**:
+  - Impor pustaka `hmac` dan `hashlib` bawaan Python, serta `settings` dari `django.conf`.
   - Di dalam method `calculate_hash(self)`:
     - Buat format string: `raw_data = f"{self.operator_email}|{self.action}|{self.accessed_user_id}|{self.ip_address}|{self.previous_hash}"`
-    - Lakukan hashing: `return hashlib.sha256(raw_data.encode('utf-8')).hexdigest()`.
+    - Buat kunci dalam bytes: `key = settings.SECRET_KEY.encode('utf-8')`
+    - Lakukan hashing HMAC: `return hmac.new(key, raw_data.encode('utf-8'), hashlib.sha256).hexdigest()`.
 - **[Advanced] Pembuatan Rantai di Views**:
   - Di dalam `CustomerSensitiveDataView`, sebelum menyimpan `AccessAuditLog`:
     - Cari entri log terakhir: `last_log = AccessAuditLog.objects.all().order_by('-id').first()`.

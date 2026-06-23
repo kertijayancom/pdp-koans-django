@@ -16,13 +16,16 @@ class AccessAuditLog(models.Model):
     def calculate_hash(self):
         """
         Tugas Level Advanced:
-        Hitung nilai SHA256 hash dari data record ini digabungkan dengan previous_hash.
+        Hitung nilai HMAC-SHA256 hash menggunakan django.conf.settings.SECRET_KEY dari data 
+        record ini digabungkan dengan previous_hash.
+        
+        Kunci HMAC: settings.SECRET_KEY (diubah ke bytes menggunakan UTF-8).
         Gabungkan string dengan urutan:
         f"{self.operator_email}|{self.action}|{self.accessed_user_id}|{self.ip_address}|{self.previous_hash}"
         
         Kembalikan string hex dari hash tersebut (hexdigest()).
         """
-        # TODO: Implementasikan fungsi penghitungan hash di sini
+        # TODO: Implementasikan fungsi penghitungan HMAC-SHA256 hash di sini
         return ""
 
     @staticmethod

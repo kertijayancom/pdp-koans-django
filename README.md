@@ -83,7 +83,7 @@ Your mission is to fix the security and privacy vulnerabilities in the code unde
 * **Tasks by Level**:
   * **[Basic]**: Implement a custom DRF permission class (`IsDataProtectionOfficer`) to allow access only to authenticated users with `is_dpo = True`.
   * **[Intermediate]**: Record a database entry in `AccessAuditLog` whenever a DPO successfully accesses sensitive customer details (logging operator email, target customer ID, and IP address).
-  * **[Advanced]**: Implement a **Cryptographic Hash Chain (Tamper-Resistant Logging)**—chain each log entry to the previous one using SHA256 signatures (`previous_hash` and `hash_signature`), and implement a static verification method `verify_integrity()` to detect database modifications or record deletions.
+  * **[Advanced]**: Implement a **Cryptographic Hash Chain (Tamper-Resistant Logging)**—chain each log entry to the previous one using HMAC-SHA256 signatures (`previous_hash` and `hash_signature` hashed with `settings.SECRET_KEY`), and implement a static verification method `verify_integrity()` to detect database modifications or record deletions.
 
 ### 🛡️ Koan 5: Data Portability & IDOR Protection (Pasal 7 & 13 UU PDP)
 * **Goal**: Enable users to securely export all their personal data in a machine-readable JSON format.
